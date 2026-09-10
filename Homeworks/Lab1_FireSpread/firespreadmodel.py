@@ -6,15 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-
-#Declare constants to use throughout the model testing
-num_x, num_y = 3, 3 #The X,Y gridsize for the Model
-num_times = 3      #Number of "Times" the Model will iterate over
-P_SPREAD = 1.0      #Probability of on-fire cell to spread to nearby forested cells
-P_INIT_BARE = 0.0        #Probability of cell to start as bare spread
-P_INIT_FIRE = 0.0       #Probability of cell to start on fire
-
-#Set the Forest Model Element Values (for readability)
+#Set the Forest Model Element CONSTANTS (for readability)
 BARE = 1
 FORESTED = 2
 ON_FIRE = 3
@@ -22,7 +14,8 @@ ON_FIRE = 3
 
 def initialize_model_array(init_array, times):
     '''
-    Take initial coniditions and create buffer around (insert row before/after and col before/after provided array) and add all timesteps needed
+    Take initial coniditions and create buffer (insert row before/after and col before/after provided array)
+    and add all timesteps defined.
     Return that buffered array
 
     --------------
@@ -33,9 +26,14 @@ def initialize_model_array(init_array, times):
         times:
             Number of times to run the simulation (length of final array will be times-1 as it is 0 indexed)
 
+    --------------
+        RETURNS
+    --------------
+        buffered_array:
+            Returns a buffered 3D array with inital conditions met
 
     '''
-    #Initialize a num_x by num_y by num_times forest grid with int dtype 
+    #Initialize a num_x by num_y by num_times forest grid with int dtype
     #Real forest is surrounded by 'Bare' Values
     # Example of '3x3' Forested Forest
     #
@@ -60,7 +58,7 @@ def initialize_model_array(init_array, times):
     #return the buffered array
     return buffered_array
 
-#Function to Get Orthogonal Neighbors to 
+#Function to Get Orthogonal Neighbors to
 def get_neighbors(row, col):
     '''
     Returns touple of coordinate values touching a central point (no diagonals). 
@@ -95,53 +93,102 @@ def get_neighbors(row, col):
     neighbors = ( (row+1, col), (row, col+1), (row-1, col), (row, col-1) )
     return neighbors
 
+def model_fire_spread(initial_conditions, num_times, p_spread):
+    '''
+    Function to model Forest Fire Spread based on initial conditions and spreading probability
+    
+    --------------
+        INPUTS
+    --------------
+        initial_conditions:
+            2D Numpy array of initial conditions for a FOREST
+        p_spread:
+            Probability of fire to spread to Vegetated Regions
+    --------------
+        RETURNS
+    --------------
+        forest:
+            3D Numpy array of calculated forest spread based on inputs
+    '''
 
-#Complete Task 1 for the Lab
-#* 3x3 grid
-#* 100% chance of spread
-#* zero initial bare spots
-#* and only the center cell on fire.
-#* Demonstrate correct behavior from iteration 0 to 1 and iteration 1 to 2.
-#* Repeat this test with a larger grid that is wider than it is tall (e.g., 3x5).
+    #Create a 3D array based on the intitial conditions buffered by 'ghost nodes'
+    forest = initialize_model_array(initial_conditions, num_times)
 
-# Create an initial frame for the tests 
-first_forest = np.ones((num_x,num_y), dtype=int) * 2 
+    #get dimensions of the initial array x,y (removing those ghost nodes)
+    init_shape = initial_conditions.shape
+    num_x = init_shape[0]
+    num_y = init_shape[1]
+
+    #Loop through each model time step (from the first to one before the last)
+    for time_step in range(num_times - 1):
+        #get the current model output as a 2D array (fixed time)
+        curr_forest = forest[time_step, :, :]
+        #create a predicted model output starting from the curr_forest
+        pred_forest = np.copy(curr_forest)
+        #create a list of spots that were initially burning
+        burning_spots = []
+        #loop through each element in the Real Forest (not the bounding BARE values)
+        for curr_row in range(1,num_x+1):
+            for curr_col in range(1,num_y+1):
+
+                #Check to see if the current element is burning
+                if(curr_forest[curr_row,curr_col] == ON_FIRE):
+                    #Add the current burning spot to the inital burning list
+                    burning_spots.append((curr_row, curr_col))
+                    #find the neighboring grid spots
+                    neighbors = get_neighbors(curr_row, curr_col)
+                    #go through each neighboor to evaluate predicted value for next time step
+                    for coord in neighbors:
+                        #Fire spots can spread to Forested neighboors
+                        if curr_forest[coord] == FORESTED:
+                            if np.random.rand() < p_spread:
+                                pred_forest[coord] = ON_FIRE         
+        #Set each initally burning spot to BARE
+        for coord in burning_spots:
+            pred_forest[coord] = BARE
+        #Put the predicted timestep as
+        forest[time_step+1,:,:] = pred_forest
+    #Return the full forest  
+    return forest
+#================================
+#           Test 1
+#================================
+#Declare constants to use throughout the model testing
+P_SPREAD = 1.0      #Probability of on-fire cell to spread to nearby forested cells
+P_INIT_BARE = 0.0        #Probability of cell to start as bare spread
+P_INIT_FIRE = 0.0       #Probability of cell to start on fire
+
+# Create an initial frame for the tests
+
+print("\t TESTING 3x3 MATRIX \n"
+      +"\t FIRE IN MIDDLE\n")
+#get the modeled output for Test 1
+#create 3x3 matix with initial values of FORESTED
+temp_num_x = 3
+temp_num_y = 3
+temp_num_times = 3
+first_forest = np.ones((temp_num_x,temp_num_y), dtype=int) * FORESTED
+first_forest[temp_num_x//2,temp_num_y//2] = ON_FIRE
 print("initial conditions:\n" , first_forest)
-#create a 3x3 'forest' with P_SPREAD = 1, 0 initial bare spots, and 1 cell on fire (in the center)
-forest = initialize_model_array(first_forest, num_times)
-#Set center on fire (remember that array dimensions are now '1' indexed
-forest[0, 2, 2] = ON_FIRE
-#Use the actual array shape to define number of timesteps
-times = forest.shape[0]
-#Loop through each model time step (from the first to one before the last)
-for time_step in range(times - 1):
-    #get the current model output as a 2D array (fixed time)
-    curr_forest = forest[time_step, :, :]
-    #create a predicted model output starting from the curr_forest
-    pred_forest = np.copy(curr_forest)
-    #create a list of spots that were initially burning
-    burning_spots = []
-    #loop through each element in the Real Forest (not the bounding BARE values)
-    for curr_row in range(1,num_x+1):
-        for curr_col in range(1,num_y+1):
+#
+test1_3by3_forest = model_fire_spread(first_forest, 3, P_SPREAD)
+print("Final forest is:\n", test1_3by3_forest[:,slice(1,temp_num_x+1),slice(1,temp_num_y+1)])
 
-            #Check to see if the current element is burning
-            if(curr_forest[curr_row,curr_col] == ON_FIRE):
-                #Add the current burning spot to the inital burning list
-                burning_spots.append((curr_row, curr_col))
-                #find the neighboring grid spots
-                neighbors = get_neighbors(curr_row, curr_col)
-                #go through each neighboor to evaluate predicted value for next time step
-                for coord in neighbors:
-                    #Fire spots can spread to Forested neighboors
-                    if curr_forest[coord] == FORESTED:
-                        if np.random.rand() < P_SPREAD:
-                            pred_forest[coord] = ON_FIRE
-    #Set each initally burning spot to BARE
-    for coord in burning_spots:
-        pred_forest[coord] = BARE
-    #Put the predicted timestep as
-    forest[time_step+1,:,:] = pred_forest
+temp_num_x = 3
+temp_num_y = 5
+temp_num_times = 3
+first_forest = np.ones((temp_num_x,temp_num_y), dtype=int) * FORESTED
+first_forest[temp_num_x//2,temp_num_y//2] = ON_FIRE
+print("initial conditions:\n" , first_forest)
+test1_3by5_forest = model_fire_spread(first_forest, 3, P_SPREAD)
+print("Final forest is:\n", test1_3by5_forest[:,slice(1,temp_num_x+1),slice(1,temp_num_y+1)])
 
-#Print the timesteps of the array
-print("Final forest is: ", forest[:,slice(1,num_x+1),slice(1,num_y+1)])
+#Show that initial conditions are met
+test_forests = [test1_3by3_forest, test1_3by5_forest]
+
+fig, axes_2d = plt.subplots(2,3, figsize=(6,10))
+for (ax_row, forest) in zip(range(axes_2d.shape[0]),test_forests):
+    for (ax,curr_forest) in zip(axes_2d[ax_row,:],forest):
+        print(forest.shape)
+        ax.imshow(curr_forest)
+plt.show()
