@@ -168,9 +168,17 @@ def test_fire_spread(initial_conditions, num_times, p_spread):
     #Remove the bufferzone
     forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
     return forest
-#================================
-#           Test 1
-#================================
+#==============================================================
+#        .-') _     ('-.    .-')    .-') _                
+#       (  OO) )  _(  OO)  ( OO ). (  OO) )               
+#       /     '._(,------.(_)---\_)/     '._        .---. 
+#       |'--...__)|  .---'/    _ | |'--...__)      /_   | 
+#       '--.  .--'|  |    \  :` `. '--.  .--'       |   | 
+#          |  |  (|  '--.  '..`''.)   |  |          |   | 
+#          |  |   |  .--' .-._)   \   |  |          |   | 
+#          |  |   |  `---.\       /   |  |          |   | 
+#          `--'   `------' `-----'    `--'          `---' 
+#===============================================================
 
 # Create an initial frame for the tests
 print("\t TESTING 3x3 MATRIX \n"
@@ -219,38 +227,20 @@ for row, subfig in enumerate(subfigs):
 plt.show()
 
 
-'''
-Task 2. Once the code is complete, answer the following scientific question.
-a. How does the spread of wildfire depend on the probability of spread
-of fire and initial forest density? To answer this, run two experiments.
-First run a series of simulations where you vary P_spread (see the
-algorithm description below) from 0 to 1. Next, run a series of
-simulations where you vary the amount of non-forested cells from 0%
-to 100% using P_bare. Instead of setting the center cell on fire, use
-P_ignite to set several sets of cells on fire during initialization. Set
-P_ignite to something that is reasonable, i.e., the fire starts reliably
-but does not overwhelm the forest immediately. For each case,
-qualitatively explore the impact on wildfire evolution. What
-observables will you need to explore? How will you quantify and
-visualize the results?
-'''
+#===============================================================
+#        .-') _     ('-.    .-')    .-') _                  
+#       (  OO) )  _(  OO)  ( OO ). (  OO) ) 
+#       /     '._(,------.(_)---\_)/     '._        .-----.  
+#       |'--...__)|  .---'/    _ | |'--...__)      / ,-.   \
+#       '--.  .--'|  |    \  :` `. '--.  .--'      '-'  |  |
+#          |  |  (|  '--.  '..`''.)   |  |            .'  / 
+#          |  |   |  .--' .-._)   \   |  |          .'  /__ 
+#          |  |   |  `---.\       /   |  |         |       | 
+#          `--'   `------' `-----'    `--'         `-------'
+##===============================================================   
 
-#================================
-#           Test 2
-#================================
-
-# how does wildfire spread depend upon prob of spread of fire & forest density 
-#series of simulations where P_spread varies
-# simulations where vary amount of bare cells (0-100)| p_ignite is fixed (0.2?)
-
-# output is time to consume the map (if it does), counts of remaining forest and bare spots 
-# histogram of completion times!
-# histogram of remaining forests 
-
-#run a model given only the probabilities of initial conditions
-#returns the model (if wanted), time to take, and initial conditions (dict)
-
-def create_initial_forest(num_x, num_y, ignite_prob=0.2, bare_prob=0):
+#function to generate an initial condition 
+def create_initial_conditions(num_x, num_y, ignite_prob=0.2, bare_prob=0):
     '''
     Function to create the initial forest conditions to be fed into the fire spread model.
     Creates an array of elements that are FORESTED, BARE, or ON_FIRE
@@ -271,7 +261,7 @@ def create_initial_forest(num_x, num_y, ignite_prob=0.2, bare_prob=0):
         initial_forest:
             num_x by num_y 2D Numpy array of initial forest conditions
     '''
-    initial_forest = np.empty((num_x,num_y), dtype = int)
+    initial_conds = np.empty((num_x,num_y), dtype = int)
     #the following link was used as reference for 'total probability'
     #https://stackoverflow.com/questions/39582504/assigning-probabilities-to-items-in-python
 
@@ -280,15 +270,15 @@ def create_initial_forest(num_x, num_y, ignite_prob=0.2, bare_prob=0):
             p = np.random.rand()
             #see if generated prob is less than the prob to start bare
             if p < bare_prob:
-                initial_forest[row,col] = BARE
+                initial_conds[row,col] = BARE
             #see if the generated prob is less than the ignite_prob (but greater than the bare prob)
             elif p < (bare_prob + ignite_prob):
-                initial_forest[row,col] = ON_FIRE
+                initial_conds[row,col] = ON_FIRE
             #make the element forested if not passed check for bare or on_fire
             else:
-                initial_forest[row,col] = FORESTED
+                initial_conds[row,col] = FORESTED
 
-    return initial_forest
+    return initial_conds
 
 
 def model_fire_spread(initial_conditions, p_spread):
@@ -384,7 +374,7 @@ def model_fire_spread(initial_conditions, p_spread):
 P_SPREAD = 1.0              #Probability of on-fire cell to spread to nearby forested cells
 P_INIT_BARE = 0.0           #Probability of cell to start as bare spread
 P_INIT_FIRE = 0.3           #Probability of cell to start on fire
-num_trials_per_spread = 5  #Number of trials for step (chose ten because increments of p_spread are .1
+num_trials_per_spread = 10  #Number of trials for step (chose ten because increments of p_spread are .1
                             #Need at least 10 trials for fire to spread once reliably
 
 #Create list of probabilities [0,1]
@@ -406,7 +396,7 @@ num_x = 10
 num_y = 10
 for spread_prob in np.arange(0,1.1,0.1):
     for trial_idx in np.arange(num_trials_per_spread):
-        init_cond = create_initial_forest(num_x, num_y, ignite_prob=P_INIT_FIRE)
+        init_cond = create_initial_conditions(num_x, num_y, ignite_prob=P_INIT_FIRE)
         curr_model = model_fire_spread(init_cond, spread_prob)
         #store the time_to_burn and num_forested remaining
         varying_spread_results['Burning Time'].append(curr_model[1]-1)
@@ -415,7 +405,7 @@ for spread_prob in np.arange(0,1.1,0.1):
 
 for init_bare_prob in np.arange(0,1.1,0.1):
     for trial_idx in np.arange(num_trials_per_spread):
-        init_cond = create_initial_forest(num_x=num_x, num_y=num_y, 
+        init_cond = create_initial_conditions(num_x=num_x, num_y=num_y, 
                                           ignite_prob=P_INIT_FIRE, bare_prob=init_bare_prob)
         curr_model = model_fire_spread(init_cond, P_SPREAD)
         #store the time_to_burn and num_forested remaining
@@ -427,7 +417,7 @@ fig = plt.figure(figsize=(10,8), constrained_layout=True)
 fig.suptitle("Fire Spread Probability and Bare Forest Spot influence on Wildfire Spread")
 subfigs = fig.subfigures(nrows=2, ncols = 1)
 titles = [ 'Varying Fire Spread Probability', 'Varying Initial Forest Density']
-vars = [varying_spread_results, varying_bare_results]
+variables = [varying_spread_results, varying_bare_results]
 x_vars = ['Spread Probability', 'Initial Bare Probability']
 y_vars = ['Burning Time', 'Remaining Forest Squares']
 fig.legend()
@@ -435,8 +425,22 @@ for row, subfig in enumerate(subfigs):
     subfig.suptitle(titles[row])
     axs = subfig.subplots(nrows=1, ncols=2)
     for col, ax in enumerate(axs):
-        ax.scatter(vars[row][x_vars[row]], vars[row][y_vars[col]])
+        ax.scatter(variables[row][x_vars[row]], variables[row][y_vars[col]])
         ax.set_title(f"{y_vars[col]}")
         ax.set_xlabel(x_vars[row])
         ax.set_ylabel(y_vars[col])
 plt.show()
+
+#===============================================================
+#        .-') _     ('-.    .-')    .-') _                   
+#       (  OO) )  _(  OO)  ( OO ). (  OO) )                  
+#       /     '._(,------.(_)---\_)/     '._        .-----.  
+#       |'--...__)|  .---'/    _ | |'--...__)      /  -.   \ 
+#       '--.  .--'|  |    \  :` `. '--.  .--'      '-' _'  | 
+#          |  |  (|  '--.  '..`''.)   |  |            |_  <  
+#          |  |   |  .--' .-._)   \   |  |         .-.  |  | 
+#          |  |   |  `---.\       /   |  |         \ `-'   / 
+#          `--'   `------' `-----'    `--'          `----''  
+#===============================================================
+
+#We will now modify the code to allow instead look at illness spread instead of wildfire spread
