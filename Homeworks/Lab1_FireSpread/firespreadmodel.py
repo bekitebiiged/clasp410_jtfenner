@@ -51,7 +51,7 @@ def initialize_model_array(init_array, times = 1):
     #get initial array shape to define final array
     shape = init_array.shape
     #if we define number of timesteps return 3D array
-    if times > 1: 
+    if times > 1:
         #create an 3D-times-deep array that has two more rows and columns than the initial array
         buffered_array = np.zeros((times,shape[0]+2,shape[1]+2), dtype=int)
         #set the first and last rows as 'BARE'
@@ -78,7 +78,7 @@ def initialize_model_array(init_array, times = 1):
 #Function to Get Orthogonal Neighbors to
 def get_neighbors(row, col):
     '''
-    Returns touple of coordinate values touching a central point (no diagonals). 
+    Returns touple of coordinate values touching a central point (no diagonals).
     Expected input is an array with 'dummy/ghost nodes' along the first/last row/cols
     Order is above, right, below, left
 
@@ -88,7 +88,7 @@ def get_neighbors(row, col):
 
         col:
         Index referring to a column of a 2D Numpy Array
-    
+
     RETURNS:
         neighbors:
         Touple of toubles containing (row,col) indicies of neighboring elements
@@ -100,7 +100,7 @@ def get_neighbors(row, col):
     [   (row, col-1)    ,   (row, col)  , (row, col+1)  ]
     [   XXXXXXXXXXXX    ,   (row-1, col), XXXXXXXXXXXXXX]
 
-    
+
                     RETURN ORDER OF NEIGHBORS
     [   XXXXXXXXXXXX    ,       1        , XXXXXXXXXXXXXX]
     [        4          ,   (row, col)   ,       2       ]
@@ -113,7 +113,7 @@ def get_neighbors(row, col):
 def test_fire_spread(initial_conditions, num_times, p_spread):
     '''
     Function to model Forest Fire Spread tests based on initial conditions and spreading probability
-    
+
     --------------
         INPUTS
     --------------
@@ -159,7 +159,7 @@ def test_fire_spread(initial_conditions, num_times, p_spread):
                         #Fire spots can spread to Forested neighboors
                         if curr_forest[coord] == FORESTED:
                             if np.random.rand() < p_spread:
-                                pred_forest[coord] = ON_FIRE         
+                                pred_forest[coord] = ON_FIRE
         #Set each initally burning spot to BARE
         for coord in burning_spots:
             pred_forest[coord] = BARE
@@ -169,15 +169,15 @@ def test_fire_spread(initial_conditions, num_times, p_spread):
     forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
     return forest
 #==============================================================
-#        .-') _     ('-.    .-')    .-') _                
-#       (  OO) )  _(  OO)  ( OO ). (  OO) )               
-#       /     '._(,------.(_)---\_)/     '._        .---. 
-#       |'--...__)|  .---'/    _ | |'--...__)      /_   | 
-#       '--.  .--'|  |    \  :` `. '--.  .--'       |   | 
-#          |  |  (|  '--.  '..`''.)   |  |          |   | 
-#          |  |   |  .--' .-._)   \   |  |          |   | 
-#          |  |   |  `---.\       /   |  |          |   | 
-#          `--'   `------' `-----'    `--'          `---' 
+#        .-') _     ('-.    .-')    .-') _
+#       (  OO) )  _(  OO)  ( OO ). (  OO) )
+#       /     '._(,------.(_)---\_)/     '._        .---.
+#       |'--...__)|  .---'/    _ | |'--...__)      /_   |
+#       '--.  .--'|  |    \  :` `. '--.  .--'       |   |
+#          |  |  (|  '--.  '..`''.)   |  |          |   |
+#          |  |   |  .--' .-._)   \   |  |          |   |
+#          |  |   |  `---.\       /   |  |          |   |
+#          `--'   `------' `-----'    `--'          `---'
 #===============================================================
 
 # Create an initial frame for the tests
@@ -213,7 +213,7 @@ test_forests = [test1_3by3_forest, test1_3by5_forest]
 #
 
 fig = plt.figure(constrained_layout=True)
-fig.suptitle("Model Validation")
+fig.suptitle("Wildfire Model Validation")
 subfigs = fig.subfigures(nrows=2, ncols = 1)
 test_titles = [ '3 BY 3 GRID', '3 BY 5 GRID']
 fig.legend()
@@ -228,22 +228,22 @@ plt.show()
 
 
 #===============================================================
-#        .-') _     ('-.    .-')    .-') _                  
-#       (  OO) )  _(  OO)  ( OO ). (  OO) ) 
-#       /     '._(,------.(_)---\_)/     '._        .-----.  
+#        .-') _     ('-.    .-')    .-') _
+#       (  OO) )  _(  OO)  ( OO ). (  OO) )
+#       /     '._(,------.(_)---\_)/     '._        .-----.
 #       |'--...__)|  .---'/    _ | |'--...__)      / ,-.   \
 #       '--.  .--'|  |    \  :` `. '--.  .--'      '-'  |  |
-#          |  |  (|  '--.  '..`''.)   |  |            .'  / 
-#          |  |   |  .--' .-._)   \   |  |          .'  /__ 
-#          |  |   |  `---.\       /   |  |         |       | 
+#          |  |  (|  '--.  '..`''.)   |  |            .'  /
+#          |  |   |  .--' .-._)   \   |  |          .'  /__
+#          |  |   |  `---.\       /   |  |         |       |
 #          `--'   `------' `-----'    `--'         `-------'
-##===============================================================   
+##===============================================================
 
-#function to generate an initial condition 
+#function to generate an initial condition
 def create_initial_conditions(num_x, num_y, ignite_prob=0.2, bare_prob=0):
     '''
-    Function to create the initial forest conditions to be fed into the fire spread model.
-    Creates an array of elements that are FORESTED, BARE, or ON_FIRE
+    Function to create the initial conditions for the spread models.
+    Creates an array of elements that are FORESTED/HEALTHY, BARE/IMMUNE, or ON_FIRE/SICk
     --------------
         INPUTS
     --------------
@@ -284,7 +284,7 @@ def create_initial_conditions(num_x, num_y, ignite_prob=0.2, bare_prob=0):
 def model_fire_spread(initial_conditions, p_spread):
     '''
     Function to model Forest Fire Spread based on initial conditions and spreading probability
-    
+
     --------------
         INPUTS
     --------------
@@ -297,7 +297,7 @@ def model_fire_spread(initial_conditions, p_spread):
     --------------
         forest:
             3D Numpy array of calculated forest spread based on inputs
-        time_to_burn: 
+        time_to_burn:
             Number of time steps required for fire to stop (depth of 3D array)
         num_forested_remaining:
             The count of forested squares on last modeled forest
@@ -332,7 +332,7 @@ def model_fire_spread(initial_conditions, p_spread):
                         #Fire spots can spread to Forested neighboors
                         if curr_forest[coord] == FORESTED:
                             if np.random.rand() < p_spread:
-                                pred_forest[coord] = ON_FIRE         
+                                pred_forest[coord] = ON_FIRE
         #Set each initally burning spot to BARE
         for coord in burning_spots:
             pred_forest[coord] = BARE
@@ -347,7 +347,7 @@ def model_fire_spread(initial_conditions, p_spread):
     #Remove the bufferzone
     time_to_burn = forest.shape[0]
     #returns the count of forested elements in the final forest
-    # works by summing up the "True [1]" values where the test is if element = 2 
+    # works by summing up the "True [1]" values where the test is if element = 2
     num_forested_remaining = np.where(forest[-1,:,:] == FORESTED, True, False).sum()
     #forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
     return forest, time_to_burn, num_forested_remaining
@@ -362,11 +362,11 @@ def model_fire_spread(initial_conditions, p_spread):
 
 #Test the percentages
 #x = create_initial_forest(100,100,ignite_prob=0.2, bare_prob=0.5)
-# works by summing up the "True [1]" values where the test is if element = 2 
-#percent = ( np.where(x == ON_FIRE, True, False).sum() ) 
+# works by summing up the "True [1]" values where the test is if element = 2
+#percent = ( np.where(x == ON_FIRE, True, False).sum() )
 #print(percent)
 
-# Vary p_spread from 0 to 1, try ten trials per p_spread value. 
+# Vary p_spread from 0 to 1, try ten trials per p_spread value.
 # Store the p_spread and final times (plot as p_spread vs final time chart)
 # Store the num_forested and final times (plot as num_forested vs final time)
 
@@ -381,13 +381,13 @@ num_trials_per_spread = 10  #Number of trials for step (chose ten because increm
 fire_spread_probs = np.arange(0, 1, 0.1)
 varying_spread_results = {
     "Burning Time": [],
-    "Remaining Forest Squares": [], 
+    "Remaining Forest Squares": [],
     "Spread Probability": []
 }
 
 varying_bare_results = {
     "Burning Time": [],
-    "Remaining Forest Squares": [], 
+    "Remaining Forest Squares": [],
     "Initial Bare Probability": []
 }
 
@@ -405,7 +405,7 @@ for spread_prob in np.arange(0,1.1,0.1):
 
 for init_bare_prob in np.arange(0,1.1,0.1):
     for trial_idx in np.arange(num_trials_per_spread):
-        init_cond = create_initial_conditions(num_x=num_x, num_y=num_y, 
+        init_cond = create_initial_conditions(num_x=num_x, num_y=num_y,
                                           ignite_prob=P_INIT_FIRE, bare_prob=init_bare_prob)
         curr_model = model_fire_spread(init_cond, P_SPREAD)
         #store the time_to_burn and num_forested remaining
@@ -416,7 +416,7 @@ for init_bare_prob in np.arange(0,1.1,0.1):
 fig = plt.figure(figsize=(10,8), constrained_layout=True)
 fig.suptitle("Fire Spread Probability and Bare Forest Spot influence on Wildfire Spread")
 subfigs = fig.subfigures(nrows=2, ncols = 1)
-titles = [ 'Varying Fire Spread Probability', 'Varying Initial Forest Density']
+titles = [ 'Varying Fire Spread Probability [FULL FOREST START]', 'Varying Initial Forest Density [P_SPREAD = 100]']
 variables = [varying_spread_results, varying_bare_results]
 x_vars = ['Spread Probability', 'Initial Bare Probability']
 y_vars = ['Burning Time', 'Remaining Forest Squares']
@@ -432,15 +432,182 @@ for row, subfig in enumerate(subfigs):
 plt.show()
 
 #===============================================================
-#        .-') _     ('-.    .-')    .-') _                   
-#       (  OO) )  _(  OO)  ( OO ). (  OO) )                  
-#       /     '._(,------.(_)---\_)/     '._        .-----.  
-#       |'--...__)|  .---'/    _ | |'--...__)      /  -.   \ 
-#       '--.  .--'|  |    \  :` `. '--.  .--'      '-' _'  | 
-#          |  |  (|  '--.  '..`''.)   |  |            |_  <  
-#          |  |   |  .--' .-._)   \   |  |         .-.  |  | 
-#          |  |   |  `---.\       /   |  |         \ `-'   / 
-#          `--'   `------' `-----'    `--'          `----''  
+#        .-') _     ('-.    .-')    .-') _
+#       (  OO) )  _(  OO)  ( OO ). (  OO) )
+#       /     '._(,------.(_)---\_)/     '._        .-----.
+#       |'--...__)|  .---'/    _ | |'--...__)      /  -.   \
+#       '--.  .--'|  |    \  :` `. '--.  .--'      '-' _'  |
+#          |  |  (|  '--.  '..`''.)   |  |            |_  <
+#          |  |   |  .--' .-._)   \   |  |         .-.  |  |
+#          |  |   |  `---.\       /   |  |         \ `-'   /
+#          `--'   `------' `-----'    `--'          `----''
 #===============================================================
 
 #We will now modify the code to allow instead look at illness spread instead of wildfire spread
+
+HEALTHY = FORESTED  #both equal to 2
+SICK = ON_FIRE      #both equal to 3
+IMMUNE = BARE       #both equal to 1
+DEAD = 0            #new constant
+
+#new check to add is 'p_fatal' or 'p_survive' which is the likelihood a SICK person will DIE or IMMUNE
+
+
+def model_illness_spread(initial_conditions, times = 0, p_spread = 1, p_fatal = 0):
+    '''
+    Function to model Zombie Virus Spread based on initial conditions and spreading probability
+
+    --------------
+        INPUTS
+    --------------
+        initial_conditions:
+            2D Numpy array of initial conditions for a FOREST
+        p_spread:
+            Probability of illness to spread to healthy cells
+        p_fatal:
+            Probability sick cell will perish (1 - p_survive)
+    --------------
+        RETURNS
+    --------------
+        illness_spread:
+            3D Numpy array of calculated illness spread
+        time_to_spread:
+            Number of time steps required for illness to spread (depth of 3D array)
+        num_alive:
+            The count of surviving cells (healthy or immune) at end of model
+    '''
+
+    #Create a 2D array based on the intitial conditions buffered by 'ghost nodes'
+    curr_model_slice = initialize_model_array(initial_conditions)
+    illness_spread = [curr_model_slice]
+    #get dimensions of the initial array x,y (removing those ghost nodes)
+    init_shape = initial_conditions.shape
+    #get the num_x and y for the og array (to use as reference)
+    num_x = init_shape[0]
+    num_y = init_shape[1]
+
+    if times == 0:
+        while(SICK in curr_model):
+            #create a predicted model output starting from the curr_forest
+            pred_model_slice = np.copy(curr_model_slice)
+            #create a list of spots that were initially sick
+            initially_sick = []
+            #loop through each element in the curr_model_slice (not the bounding IMMUNE values)
+            for curr_row in range(1,num_x+1):
+                for curr_col in range(1,num_y+1):
+
+                    #Check to see if the current element is SICK
+                    if(curr_model_slice[curr_row,curr_col] == SICK):
+                        #Add the current burning spot to the inital burning list
+                        initially_sick.append((curr_row, curr_col))
+                        #find the neighboring grid spots
+                        neighbors = get_neighbors(curr_row, curr_col)
+                        #go through each neighboor to evaluate predicted value for next time step
+                        for coord in neighbors:
+                            #Fire spots can spread to Forested neighboors
+                            if curr_model_slice[coord] == HEALTHY:
+                                if np.random.rand() < p_spread:
+                                    pred_model_slice[coord] = SICK
+            #Check if each initially SICK cell becomes IMMUNE or DEAD
+            for coord in initially_sick:
+                p = np.random.rand()
+                if p < p_fatal:
+                    pred_model_slice[coord] = DEAD
+                else:
+                    pred_model_slice[coord] = IMMUNE
+            #Put the predicted timestep as
+            illness_spread.append(pred_model_slice)
+            curr_model_slice = pred_model_slice
+    else:
+        for time in range(times):
+            #create a predicted model output starting from the curr_forest
+            pred_model_slice = np.copy(curr_model_slice)
+            #create a list of spots that were initially sick
+            initially_sick = []
+            #loop through each element in the curr_model_slice (not the bounding IMMUNE values)
+            for curr_row in range(1,num_x+1):
+                for curr_col in range(1,num_y+1):
+
+                    #Check to see if the current element is SICK
+                    if(curr_model_slice[curr_row,curr_col] == SICK):
+                        #Add the current burning spot to the inital burning list
+                        initially_sick.append((curr_row, curr_col))
+                        #find the neighboring grid spots
+                        neighbors = get_neighbors(curr_row, curr_col)
+                        #go through each neighboor to evaluate predicted value for next time step
+                        for coord in neighbors:
+                            #Fire spots can spread to Forested neighboors
+                            if curr_model_slice[coord] == HEALTHY:
+                                if np.random.rand() < p_spread:
+                                    pred_model_slice[coord] = SICK
+            #Check if each initially SICK cell becomes IMMUNE or DEAD
+            for coord in initially_sick:
+                p = np.random.rand()
+                if p < p_fatal:
+                    pred_model_slice[coord] = DEAD
+                else:
+                    pred_model_slice[coord] = IMMUNE
+            #Put the predicted timestep as
+            illness_spread.append(pred_model_slice)
+            curr_model_slice = pred_model_slice
+
+    #change the list of nparrays into an nparray
+    illness_spread = np.array(illness_spread)
+    #remove the ghost/buffer nodes
+    illness_spread = illness_spread[:,slice(1,num_x+1),slice(1,num_y+1)]
+    #Get the runtime (1 minus depth as first time is T = 0)
+    time_to_spread = illness_spread.shape[0] - 1
+
+    #Get remaining count of HEALTHY and IMMUNE cells
+    #works by summing up the "True" (equal 1) values where the test is if element = 2
+    num_alive = np.where(illness_spread[-1,:,:] == HEALTHY, True, False).sum()
+    num_alive = num_alive + np.where(illness_spread[-1:,:] == IMMUNE, True, False).sum()
+    #forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
+    return illness_spread, time_to_spread, num_alive
+
+#Test the illness spread using similar tests to the forest one
+
+# Create an initial frame for the tests
+print("\t TESTING 6x6 MATRIX \n"
+      +"\t SICK IN MIDDLE\n")
+#get the modeled output for Test 1
+#create 3x3 matix with initial values of FORESTED
+temp_num_x = 3
+temp_num_y = 3
+temp_num_times = 5
+init_test_illness = np.ones((temp_num_x,temp_num_y), dtype=int) * HEALTHY
+init_test_illness[temp_num_x//2,temp_num_y//2] = SICK
+#print("initial conditions:\n" , first_forest)
+#Test with full illness spread and 50% fatality rate
+test_3by3_illness = model_illness_spread(init_test_illness, times = temp_num_times, p_spread=1, p_fatal=0.5)
+#print("Final forest is:\n", test1_3by3_forest[:,slice(1,temp_num_x+1),slice(1,temp_num_y+1)])
+
+temp_num_x = 20
+temp_num_y = 30
+temp_num_times = 5
+init_test_ilness = create_initial_conditions(temp_num_x,temp_num_y, 0.5, 0.5)
+#print("initial conditions:\n" , first_forest)
+test_20by20_illness = model_illness_spread(init_test_illness, times = temp_num_times, p_spread = 1, p_fatal = 0.5)
+#print("Final forest is:\n", test1_3by5_forest[:,slice(1,temp_num_x+1),slice(1,temp_num_y+1)])
+
+#Create color map with [0 = white, 1 = tan, 2 = green, 3 = firebrick]
+illness_cmap = ListedColormap(['white','tan', 'darkgreen', 'firebrick'])
+test_illness_models = [test_3by3_illness, test_20by20_illness]
+#https://stackoverflow.com/questions/27426668/row-titles-for-matplotlib-subplot
+#Found subplot labeling help via code above
+#View the two modeled output graphically
+
+fig = plt.figure(constrained_layout=True)
+fig.suptitle("Illness Model Validation")
+subfigs = fig.subfigures(nrows=2, ncols = 1)
+test_titles = [ f'6 BY 6 GRID', '6 BY 6 GRID']
+fig.legend()
+for row, subfig in enumerate(subfigs):
+    subfig.suptitle(test_titles[row])
+    axs = subfig.subplots(nrows=1, ncols=temp_num_times)
+    for col, ax in enumerate(axs):
+        curr_model = test_illness_models[row][0]
+        ax.imshow(curr_model[col,:,:],vmin = 0, vmax = 3, cmap = illness_cmap)
+        ax.grid(False)
+        ax.set_title(f"T = {col}")
+plt.show()
