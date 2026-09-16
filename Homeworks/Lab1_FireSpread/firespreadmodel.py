@@ -240,7 +240,7 @@ plt.show()
 ##===============================================================
 
 #function to generate an initial condition
-def create_initial_conditions(num_x, num_y, ignite_prob=0.2, bare_prob=0):
+def create_initial_conditions(num_x, num_y, init_onfire_prob=0.2, init_bare_prob=0):
     '''
     Function to create the initial conditions for the spread models.
     Creates an array of elements that are FORESTED/HEALTHY, BARE/IMMUNE, or ON_FIRE/SICk
@@ -251,9 +251,9 @@ def create_initial_conditions(num_x, num_y, ignite_prob=0.2, bare_prob=0):
             size of initial forest in the x dimension
         num_y:
             size of initial forest in the y dimension
-        p_ignite:
+        init_onfire_prob:
             probability a square will initially be ON_FIRE
-        p_bare:
+        init_bare_prob:
             probability a square will initially be BARE
     --------------
         RETURNS
@@ -269,10 +269,10 @@ def create_initial_conditions(num_x, num_y, ignite_prob=0.2, bare_prob=0):
         for col in range(num_y):
             p = np.random.rand()
             #see if generated prob is less than the prob to start bare
-            if p < bare_prob:
+            if p < init_bare_prob:
                 initial_conds[row,col] = BARE
             #see if the generated prob is less than the ignite_prob (but greater than the bare prob)
-            elif p < (bare_prob + ignite_prob):
+            elif p < (init_bare_prob + init_onfire_prob):
                 initial_conds[row,col] = ON_FIRE
             #make the element forested if not passed check for bare or on_fire
             else:
@@ -396,22 +396,22 @@ num_x = 10
 num_y = 10
 for spread_prob in np.arange(0,1.1,0.1):
     for trial_idx in np.arange(num_trials_per_spread):
-        init_cond = create_initial_conditions(num_x, num_y, ignite_prob=P_INIT_FIRE)
+        init_cond = create_initial_conditions(num_x, num_y, init_onfire_prob=P_INIT_FIRE)
         curr_model = model_fire_spread(init_cond, spread_prob)
         #store the time_to_burn and num_forested remaining
         varying_spread_results['Burning Time'].append(curr_model[1]-1)
         varying_spread_results['Remaining Forest Squares'].append(curr_model[2])
         varying_spread_results['Spread Probability'].append(spread_prob)
 
-for init_bare_prob in np.arange(0,1.1,0.1):
+for bare_prob in np.arange(0,1.1,0.1):
     for trial_idx in np.arange(num_trials_per_spread):
         init_cond = create_initial_conditions(num_x=num_x, num_y=num_y,
-                                          ignite_prob=P_INIT_FIRE, bare_prob=init_bare_prob)
+                                          init_onfire_prob=P_INIT_FIRE, init_bare_prob=bare_prob)
         curr_model = model_fire_spread(init_cond, P_SPREAD)
         #store the time_to_burn and num_forested remaining
         varying_bare_results['Burning Time'].append(curr_model[1]-1)
         varying_bare_results['Remaining Forest Squares'].append(curr_model[2])
-        varying_bare_results['Initial Bare Probability'].append(init_bare_prob)
+        varying_bare_results['Initial Bare Probability'].append(bare_prob)
 
 fig = plt.figure(figsize=(10,8), constrained_layout=True)
 fig.suptitle("Fire Spread Probability and Bare Forest Spot influence on Wildfire Spread")
@@ -473,8 +473,12 @@ def model_illness_spread(initial_conditions, times = 0, p_spread = 1, p_fatal = 
             3D Numpy array of calculated illness spread
         time_to_spread:
             Number of time steps required for illness to spread (depth of 3D array)
+        num_healthy:
+            The count of healthy cells at end of model
         num_alive:
-            The count of surviving cells (healthy or immune) at end of model
+            The count of immune cells at end of model
+        num_dead:
+            The count of dead cells at the end of the model
     '''
 
     #Create a 2D array based on the intitial conditions buffered by 'ghost nodes'
@@ -560,10 +564,11 @@ def model_illness_spread(initial_conditions, times = 0, p_spread = 1, p_fatal = 
 
     #Get remaining count of HEALTHY and IMMUNE cells
     #works by summing up the "True" (equal 1) values where the test is if element = 2
-    num_alive = np.where(illness_spread[-1,:,:] == HEALTHY, True, False).sum()
-    num_alive = num_alive + np.where(illness_spread[-1:,:] == IMMUNE, True, False).sum()
+    num_healthy = np.where(illness_spread[-1,:,:] == HEALTHY, True, False).sum()
+    num_immune = np.where(illness_spread[-1:,:] == IMMUNE, True, False).sum()
+    num_dead = np.where(illness_spread[-1,:,:] == DEAD, True, False).sum()
     #forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
-    return illness_spread, time_to_spread, num_alive
+    return illness_spread, time_to_spread, num_healthy, num_immune, num_dead
 
 #Test the illness spread using similar tests to the forest one
 
@@ -585,9 +590,9 @@ test_3by3_illness = model_illness_spread(init_test_illness, times = temp_num_tim
 temp_num_x = 20
 temp_num_y = 30
 temp_num_times = 5
-init_test_ilness = create_initial_conditions(temp_num_x,temp_num_y, 0.5, 0.5)
+init_test_illness = create_initial_conditions(temp_num_x,temp_num_y, init_bare_prob= 0.3, init_onfire_prob=0.2)
 #print("initial conditions:\n" , first_forest)
-test_20by20_illness = model_illness_spread(init_test_illness, times = temp_num_times, p_spread = 1, p_fatal = 0.5)
+test_20by20_illness = model_illness_spread(init_test_illness, times = temp_num_times, p_spread = 1, p_fatal = 0.3)
 #print("Final forest is:\n", test1_3by5_forest[:,slice(1,temp_num_x+1),slice(1,temp_num_y+1)])
 
 #Create color map with [0 = white, 1 = tan, 2 = green, 3 = firebrick]
@@ -600,14 +605,17 @@ test_illness_models = [test_3by3_illness, test_20by20_illness]
 fig = plt.figure(constrained_layout=True)
 fig.suptitle("Illness Model Validation")
 subfigs = fig.subfigures(nrows=2, ncols = 1)
-test_titles = [ f'6 BY 6 GRID', '6 BY 6 GRID']
+test_titles = [ f'6 BY 6 GRID', '20 BY 30 GRID']
 fig.legend()
 for row, subfig in enumerate(subfigs):
     subfig.suptitle(test_titles[row])
     axs = subfig.subplots(nrows=1, ncols=temp_num_times)
     for col, ax in enumerate(axs):
         curr_model = test_illness_models[row][0]
+        print(row, col)
         ax.imshow(curr_model[col,:,:],vmin = 0, vmax = 3, cmap = illness_cmap)
         ax.grid(False)
         ax.set_title(f"T = {col}")
 plt.show()
+
+
