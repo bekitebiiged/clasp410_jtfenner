@@ -344,7 +344,7 @@ def model_fire_spread(initial_conditions, p_spread):
     forest = np.array(forest)
     #remove the ghost/buffer nodes
     forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
-    #Remove the bufferzone
+    #get the time to burn from the final shape (length of first dimensition/#oftimesteps)
     time_to_burn = forest.shape[0]
     #returns the count of forested elements in the final forest
     # works by summing up the "True [1]" values where the test is if element = 2
@@ -373,7 +373,7 @@ def model_fire_spread(initial_conditions, p_spread):
 #Declare constants to use throughout the model testing
 P_SPREAD = 1.0              #Probability of on-fire cell to spread to nearby forested cells
 P_INIT_BARE = 0.0           #Probability of cell to start as bare spread
-P_INIT_FIRE = 0.3           #Probability of cell to start on fire
+P_INIT_FIRE = 0.1           #Probability of cell to start on fire (out of 100, there should be about 10 fire squares)
 num_trials_per_spread = 10  #Number of trials for step (chose ten because increments of p_spread are .1
                             #Need at least 10 trials for fire to spread once reliably
 
@@ -392,26 +392,34 @@ varying_bare_results = {
 }
 
 #All trials will have 100 by 100 forest size
-num_x = 10
-num_y = 10
+num_x = 100
+num_y = 100
 for spread_prob in np.arange(0,1.1,0.1):
+    burn_time = []
+    forest_sq = []
     for trial_idx in np.arange(num_trials_per_spread):
         init_cond = create_initial_conditions(num_x, num_y, init_onfire_prob=P_INIT_FIRE)
         curr_model = model_fire_spread(init_cond, spread_prob)
         #store the time_to_burn and num_forested remaining
-        varying_spread_results['Burning Time'].append(curr_model[1]-1)
-        varying_spread_results['Remaining Forest Squares'].append(curr_model[2])
-        varying_spread_results['Spread Probability'].append(spread_prob)
+        burn_time.append(curr_model[1]-1)
+        forest_sq.append(curr_model[2])
+    varying_spread_results['Burning Time'].append(np.mean(burn_time))
+    varying_spread_results['Remaining Forest Squares'].append(np.mean(forest_sq))
+    varying_spread_results['Spread Probability'].append(spread_prob)
 
 for bare_prob in np.arange(0,1.1,0.1):
+    burn_time = []
+    forest_sq = []
     for trial_idx in np.arange(num_trials_per_spread):
         init_cond = create_initial_conditions(num_x=num_x, num_y=num_y,
                                           init_onfire_prob=P_INIT_FIRE, init_bare_prob=bare_prob)
         curr_model = model_fire_spread(init_cond, P_SPREAD)
         #store the time_to_burn and num_forested remaining
-        varying_bare_results['Burning Time'].append(curr_model[1]-1)
-        varying_bare_results['Remaining Forest Squares'].append(curr_model[2])
-        varying_bare_results['Initial Bare Probability'].append(bare_prob)
+        burn_time.append(curr_model[1]-1)
+        forest_sq.append(curr_model[2])
+    varying_bare_results['Burning Time'].append(np.mean(burn_time))
+    varying_bare_results['Remaining Forest Squares'].append(np.mean(forest_sq))
+    varying_bare_results['Initial Bare Probability'].append(bare_prob)
 
 fig = plt.figure(figsize=(10,8), constrained_layout=True)
 fig.suptitle("Fire Spread Probability and Bare Forest Spot influence on Wildfire Spread")
@@ -491,7 +499,7 @@ def model_illness_spread(initial_conditions, times = 0, p_spread = 1, p_fatal = 
     num_y = init_shape[1]
 
     if times == 0:
-        while(SICK in curr_model):
+        while(SICK in curr_model_slice):
             #create a predicted model output starting from the curr_forest
             pred_model_slice = np.copy(curr_model_slice)
             #create a list of spots that were initially sick
@@ -550,7 +558,7 @@ def model_illness_spread(initial_conditions, times = 0, p_spread = 1, p_fatal = 
                 if p < p_fatal:
                     pred_model_slice[coord] = DEAD
                 else:
-                    pred_model_slice[coord] = IMMUNE
+                    pred_model_slice[coord] = 4
             #Put the predicted timestep as
             illness_spread.append(pred_model_slice)
             curr_model_slice = pred_model_slice
@@ -560,7 +568,7 @@ def model_illness_spread(initial_conditions, times = 0, p_spread = 1, p_fatal = 
     #remove the ghost/buffer nodes
     illness_spread = illness_spread[:,slice(1,num_x+1),slice(1,num_y+1)]
     #Get the runtime (1 minus depth as first time is T = 0)
-    time_to_spread = illness_spread.shape[0] - 1
+    time_to_spread = illness_spread.shape[0]
 
     #Get remaining count of HEALTHY and IMMUNE cells
     #works by summing up the "True" (equal 1) values where the test is if element = 2
@@ -595,8 +603,10 @@ init_test_illness = create_initial_conditions(temp_num_x,temp_num_y, init_bare_p
 test_20by20_illness = model_illness_spread(init_test_illness, times = temp_num_times, p_spread = 1, p_fatal = 0.3)
 #print("Final forest is:\n", test1_3by5_forest[:,slice(1,temp_num_x+1),slice(1,temp_num_y+1)])
 
+#
+
 #Create color map with [0 = white, 1 = tan, 2 = green, 3 = firebrick]
-illness_cmap = ListedColormap(['white','tan', 'darkgreen', 'firebrick'])
+illness_cmap = ListedColormap(['white','tan', 'darkgreen', 'firebrick', 'aquamarine'])
 test_illness_models = [test_3by3_illness, test_20by20_illness]
 #https://stackoverflow.com/questions/27426668/row-titles-for-matplotlib-subplot
 #Found subplot labeling help via code above
@@ -613,9 +623,105 @@ for row, subfig in enumerate(subfigs):
     for col, ax in enumerate(axs):
         curr_model = test_illness_models[row][0]
         print(row, col)
-        ax.imshow(curr_model[col,:,:],vmin = 0, vmax = 3, cmap = illness_cmap)
+        ax.imshow(curr_model[col,:,:],vmin = 0, vmax = 4, cmap = illness_cmap)
         ax.grid(False)
         ax.set_title(f"T = {col}")
 plt.show()
 
 
+
+#Test the Illness spread varying the mortality rate and initial immune population
+#Declare constants to use throughout the model testing
+P_SPREAD = 1.0              #Probability of illness spread, we're assuming it WILL spread
+P_INIT_BARE = 0.0           #Probability of cell to start as IMMUNE
+P_INIT_SICK = 0.1           #Probability of initially SICK (out of 100 people, about 10 will be sick)
+P_FATAL = 0.2               #For those who are sick, about 2/10 will perish :(
+num_trials_per_spread = 10  #Number of trials for step (chose ten because increments of p_spread are .1
+                            #Need at least 10 trials for fire to spread once reliably
+
+#Create list of probabilities [0,1]
+fire_spread_probs = np.arange(0, 1, 0.1)
+varying_spread_results = {
+    "Spreading Time": [],
+    "Remaining Living Population": [],
+    "Survival Rate": [],
+    "Dead Population": []
+}
+
+varying_immune_results = {
+    "Spreading Time": [],
+    "Remaining Living Population": [],
+    "Initial Vaccinated Rate": [],
+    "Dead Population": []
+}
+
+#All trials will have 100 by 100 forest size
+num_x = 100
+num_y = 100
+for p_fatal in np.arange(0,1.1,0.1):
+    spread_times = []
+    remaining_living_population =[]
+    survival_rate = []
+    dead_pop = []
+    for trial_idx in np.arange(num_trials_per_spread):
+        init_cond = create_initial_conditions(num_x, num_y, init_onfire_prob=P_INIT_SICK)
+        curr_model = model_illness_spread(init_cond,p_spread=P_SPREAD, p_fatal=p_fatal)
+        #store the spreading time, remianing living, spread probabilities
+        #curr modes is list of [illness_spread, time_to_spread, num_healthy, num_immune, num_dead]
+        #store the time_to_burn and num_forested remaining
+        num_alive = curr_model[2] + curr_model[3]
+        num_dead = curr_model[4]
+        spread_times.append( curr_model[1]-1 )
+        remaining_living_population.append(num_alive)
+        survival_rate.append(1 - p_fatal)
+        dead_pop.append(num_dead)
+    varying_spread_results['Spreading Time'].append(np.mean(spread_times))
+    varying_spread_results['Remaining Living Population'].append(np.mean(remaining_living_population))
+    varying_spread_results['Survival Rate'].append(np.mean(survival_rate))
+    varying_spread_results['Dead Population'].append(np.mean(dead_pop))
+
+for bare_prob in np.arange(0,1.1,0.1):
+    spread_times = []
+    remaining_living_population = []
+    immunity_rate = []
+    dead_pop = []
+    for trial_idx in np.arange(num_trials_per_spread):
+        init_cond = create_initial_conditions(num_x=num_x, num_y=num_y,
+                                          init_onfire_prob=P_INIT_SICK, init_bare_prob=bare_prob)
+        curr_model = model_illness_spread(init_cond, p_spread=P_SPREAD, p_fatal=P_FATAL)
+        #curr modes is list of [illness_spread, time_to_spread, num_healthy, num_immune, num_dead]
+        #store the time_to_burn and num_forested remaining
+        num_alive = curr_model[2] + curr_model[3]
+        num_dead = curr_model[4]
+        spread_times.append( curr_model[1]-1 )
+        remaining_living_population.append(num_alive)
+        immunity_rate.append(bare_prob)
+        dead_pop.append(num_dead)
+    varying_immune_results['Spreading Time'].append(np.mean(spread_times))
+    varying_immune_results['Remaining Living Population'].append(np.mean(num_alive))
+    varying_immune_results['Initial Vaccinated Rate'].append(np.mean(immunity_rate))
+    varying_immune_results['Dead Population'].append(np.mean(dead_pop))
+
+fig = plt.figure(figsize=(10,8), constrained_layout=True)
+fig.suptitle("Survival Probability and Early Vaccination Influence on Illness Spread")
+subfigs = fig.subfigures(nrows=2, ncols = 1)
+titles = [ 'Varying Survival Rate [NO INITIAL VACCINATIONS]', 'Varying Initial Vaccination Rate [P_SPREAD = 100]']
+variables = [varying_spread_results, varying_immune_results]
+x_vars = ['Survival Rate', 'Initial Vaccinated Rate']
+y_vars = ['Spreading Time', 'Remaining Living Population', 'Dead Population']
+fig.legend()
+for row, subfig in enumerate(subfigs):
+    subfig.suptitle(titles[row])
+    axs = subfig.subplots(nrows=1, ncols=2)
+    for col, ax in enumerate(axs):
+        ax.scatter(variables[row][x_vars[row]], variables[row][y_vars[col]], label=y_vars[col])
+        if(col == 1):
+            ax.scatter(variables[row][x_vars[row]], variables[row][y_vars[2]], label=y_vars[2])
+            ax.set_ylabel("Remaining Population")
+            ax.legend()
+        else:
+            ax.set_ylabel(y_vars[col])
+        ax.set_title(f"{y_vars[col]}")
+        ax.set_xlabel(x_vars[row])
+
+plt.show()
