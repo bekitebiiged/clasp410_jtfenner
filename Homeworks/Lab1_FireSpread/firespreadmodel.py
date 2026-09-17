@@ -190,6 +190,7 @@ temp_num_y = 3
 temp_num_times = 3
 first_forest = np.ones((temp_num_x,temp_num_y), dtype=int) * FORESTED
 first_forest[temp_num_x//2,temp_num_y//2] = ON_FIRE
+print(first_forest)
 #print("initial conditions:\n" , first_forest)
 #
 test1_3by3_forest = test_fire_spread(first_forest, 3, P_SPREAD)
@@ -221,7 +222,7 @@ for row, subfig in enumerate(subfigs):
     subfig.suptitle(test_titles[row])
     axs = subfig.subplots(nrows=1, ncols=3)
     for col, ax in enumerate(axs):
-        ax.imshow(test_forests[row][col], cmap = forest_cmap)
+        ax.imshow(test_forests[row][col], vmin = 1, vmax = 3, cmap = forest_cmap)
         ax.grid(False)
         ax.set_title(f"T = {col}")
 plt.show()
