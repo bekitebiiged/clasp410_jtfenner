@@ -110,9 +110,9 @@ def get_neighbors(row, col):
     neighbors = ( (row+1, col), (row, col+1), (row-1, col), (row, col-1) )
     return neighbors
 
-def test_fire_spread(initial_conditions, num_times, p_spread):
+def model_fire_spread(initial_conditions, times = 0, p_spread = 1):
     '''
-    Function to model Forest Fire Spread tests based on initial conditions and spreading probability
+    Function to model Forest Fire Spread based on initial conditions and spreading probability
 
     --------------
         INPUTS
@@ -126,48 +126,93 @@ def test_fire_spread(initial_conditions, num_times, p_spread):
     --------------
         forest:
             3D Numpy array of calculated forest spread based on inputs
+        time_to_burn:
+            Number of time steps required for fire to stop (depth of 3D array)
+        num_forested_remaining:
+            The count of forested squares on last modeled forest
     '''
 
-    #Create a 3D array based on the intitial conditions buffered by 'ghost nodes'
-    forest = initialize_model_array(initial_conditions, num_times)
-
+    #Create a 2D array based on the intitial conditions buffered by 'ghost nodes'
+    curr_forest = initialize_model_array(initial_conditions)
+    forest = [curr_forest]
     #get dimensions of the initial array x,y (removing those ghost nodes)
     init_shape = initial_conditions.shape
+    #get the num_x and y for the og array (to use as reference)
     num_x = init_shape[0]
     num_y = init_shape[1]
 
-    #Loop through each model time step (from the first to one before the last)
-    for time_step in range(num_times - 1):
-        #get the current model output as a 2D array (fixed time)
-        curr_forest = forest[time_step, :, :]
-        #create a predicted model output starting from the curr_forest
-        pred_forest = np.copy(curr_forest)
-        #create a list of spots that were initially burning
-        burning_spots = []
-        #loop through each element in the Real Forest (not the bounding BARE values)
-        for curr_row in range(1,num_x+1):
-            for curr_col in range(1,num_y+1):
+    #if times = 0 (by default) use a while loop
+    if times == 0:
+        #while there's a spreadable element
+        while(ON_FIRE in curr_forest):
+            #create a predicted model output starting from the curr_forest
+            pred_forest = np.copy(curr_forest)
+            #create a list of spots that were initially burning
+            burning_spots = []
+            #loop through each element in the Real Forest (not the bounding BARE values)
+            for curr_row in range(1,num_x+1):
+                for curr_col in range(1,num_y+1):
 
-                #Check to see if the current element is burning
-                if(curr_forest[curr_row,curr_col] == ON_FIRE):
-                    #Add the current burning spot to the inital burning list
-                    burning_spots.append((curr_row, curr_col))
-                    #find the neighboring grid spots
-                    neighbors = get_neighbors(curr_row, curr_col)
-                    #go through each neighboor to evaluate predicted value for next time step
-                    for coord in neighbors:
-                        #Fire spots can spread to Forested neighboors
-                        if curr_forest[coord] == FORESTED:
-                            if np.random.rand() < p_spread:
-                                pred_forest[coord] = ON_FIRE
-        #Set each initally burning spot to BARE
-        for coord in burning_spots:
-            pred_forest[coord] = BARE
-        #Put the predicted timestep as
-        forest[time_step+1,:,:] = pred_forest
-    #Remove the bufferzone
+                    #Check to see if the current element is burning
+                    if(curr_forest[curr_row,curr_col] == ON_FIRE):
+                        #Add the current burning spot to the inital burning list
+                        burning_spots.append((curr_row, curr_col))
+                        #find the neighboring grid spots
+                        neighbors = get_neighbors(curr_row, curr_col)
+                        #go through each neighboor to evaluate predicted value for next time step
+                        for coord in neighbors:
+                            #Fire spots can spread to Forested neighboors
+                            if curr_forest[coord] == FORESTED:
+                                if np.random.rand() < p_spread:
+                                    pred_forest[coord] = ON_FIRE
+            #Set each initally burning spot to BARE
+            for coord in burning_spots:
+                pred_forest[coord] = BARE
+            #Put the predicted timestep as
+            forest.append(pred_forest)
+            curr_forest = pred_forest
+    else:
+        for time in range(times-1):
+            #create a predicted model output starting from the curr_forest
+            pred_forest = np.copy(curr_forest)
+            #create a list of spots that were initially burning
+            burning_spots = []
+            #loop through each element in the Real Forest (not the bounding BARE values)
+            for curr_row in range(1,num_x+1):
+                for curr_col in range(1,num_y+1):
+
+                    #Check to see if the current element is burning
+                    if(curr_forest[curr_row,curr_col] == ON_FIRE):
+                        #Add the current burning spot to the inital burning list
+                        burning_spots.append((curr_row, curr_col))
+                        #find the neighboring grid spots
+                        neighbors = get_neighbors(curr_row, curr_col)
+                        #go through each neighboor to evaluate predicted value for next time step
+                        for coord in neighbors:
+                            #Fire spots can spread to Forested neighboors
+                            if curr_forest[coord] == FORESTED:
+                                if np.random.rand() < p_spread:
+                                    pred_forest[coord] = ON_FIRE
+            #Set each initally burning spot to BARE
+            for coord in burning_spots:
+                pred_forest[coord] = BARE
+            #Put the predicted timestep as
+            forest.append(pred_forest)
+            curr_forest = pred_forest
+
+    #change the list of nparrays into an nparray
+    forest = np.array(forest)
+    #remove the ghost/buffer nodes
     forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
-    return forest
+    #get the time to burn from the final shape (length of first dimensition/#oftimesteps)
+    time_to_burn = forest.shape[0]
+    #returns the count of forested elements in the final forest
+    # works by summing up the "True [1]" values where the test is if element = 2
+    num_forested_remaining = np.where(forest[-1,:,:] == FORESTED, True, False).sum()
+    #forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
+    return forest, time_to_burn, num_forested_remaining
+
+
 #==============================================================
 #        .-') _     ('-.    .-')    .-') _
 #       (  OO) )  _(  OO)  ( OO ). (  OO) )
@@ -181,8 +226,8 @@ def test_fire_spread(initial_conditions, num_times, p_spread):
 #===============================================================
 
 # Create an initial frame for the tests
-print("\t TESTING 3x3 MATRIX \n"
-      +"\t FIRE IN MIDDLE\n")
+#print("\t TESTING 3x3 MATRIX \n"
+#      +"\t FIRE IN MIDDLE\n")
 #get the modeled output for Test 1
 #create 3x3 matix with initial values of FORESTED
 temp_num_x = 3
@@ -190,10 +235,10 @@ temp_num_y = 3
 temp_num_times = 3
 first_forest = np.ones((temp_num_x,temp_num_y), dtype=int) * FORESTED
 first_forest[temp_num_x//2,temp_num_y//2] = ON_FIRE
-print(first_forest)
+#print(first_forest)
 #print("initial conditions:\n" , first_forest)
 #
-test1_3by3_forest = test_fire_spread(first_forest, 3, P_SPREAD)
+test1_3by3_forest = model_fire_spread(first_forest, times= 3, p_spread = P_SPREAD)[0]
 #print("Final forest is:\n", test1_3by3_forest[:,slice(1,temp_num_x+1),slice(1,temp_num_y+1)])
 
 temp_num_x = 4
@@ -202,7 +247,7 @@ temp_num_times = 3
 first_forest = np.ones((temp_num_x,temp_num_y), dtype=int) * FORESTED
 first_forest[temp_num_x//2,temp_num_y//2] = ON_FIRE
 #print("initial conditions:\n" , first_forest)
-test1_3by5_forest = test_fire_spread(first_forest, 3, P_SPREAD)
+test1_3by5_forest = model_fire_spread(first_forest, times = 3, p_spread = P_SPREAD)[0]
 #print("Final forest is:\n", test1_3by5_forest[:,slice(1,temp_num_x+1),slice(1,temp_num_y+1)])
 
 #Show that initial conditions are met
@@ -212,16 +257,17 @@ test_forests = [test1_3by3_forest, test1_3by5_forest]
 #Found subplot labeling help via code above
 #View the two modeled output graphically
 #
+#print(test_forests)
 
 fig = plt.figure(constrained_layout=True)
 fig.suptitle("Wildfire Model Validation")
 subfigs = fig.subfigures(nrows=2, ncols = 1)
 test_titles = [ '3 BY 3 GRID', '3 BY 5 GRID']
-fig.legend()
 for row, subfig in enumerate(subfigs):
     subfig.suptitle(test_titles[row])
     axs = subfig.subplots(nrows=1, ncols=3)
     for col, ax in enumerate(axs):
+        #print(test_forests[row][col])
         ax.imshow(test_forests[row][col], vmin = 1, vmax = 3, cmap = forest_cmap)
         ax.grid(False)
         ax.set_title(f"T = {col}")
@@ -281,78 +327,6 @@ def create_initial_conditions(num_x, num_y, init_onfire_prob=0.2, init_bare_prob
 
     return initial_conds
 
-
-def model_fire_spread(initial_conditions, p_spread):
-    '''
-    Function to model Forest Fire Spread based on initial conditions and spreading probability
-
-    --------------
-        INPUTS
-    --------------
-        initial_conditions:
-            2D Numpy array of initial conditions for a FOREST
-        p_spread:
-            Probability of fire to spread to Vegetated Regions
-    --------------
-        RETURNS
-    --------------
-        forest:
-            3D Numpy array of calculated forest spread based on inputs
-        time_to_burn:
-            Number of time steps required for fire to stop (depth of 3D array)
-        num_forested_remaining:
-            The count of forested squares on last modeled forest
-    '''
-
-    #Create a 2D array based on the intitial conditions buffered by 'ghost nodes'
-    curr_forest = initialize_model_array(initial_conditions)
-    forest = [curr_forest]
-    #get dimensions of the initial array x,y (removing those ghost nodes)
-    init_shape = initial_conditions.shape
-    #get the num_x and y for the og array (to use as reference)
-    num_x = init_shape[0]
-    num_y = init_shape[1]
-
-    while(ON_FIRE in curr_forest):
-        #create a predicted model output starting from the curr_forest
-        pred_forest = np.copy(curr_forest)
-        #create a list of spots that were initially burning
-        burning_spots = []
-        #loop through each element in the Real Forest (not the bounding BARE values)
-        for curr_row in range(1,num_x+1):
-            for curr_col in range(1,num_y+1):
-
-                #Check to see if the current element is burning
-                if(curr_forest[curr_row,curr_col] == ON_FIRE):
-                    #Add the current burning spot to the inital burning list
-                    burning_spots.append((curr_row, curr_col))
-                    #find the neighboring grid spots
-                    neighbors = get_neighbors(curr_row, curr_col)
-                    #go through each neighboor to evaluate predicted value for next time step
-                    for coord in neighbors:
-                        #Fire spots can spread to Forested neighboors
-                        if curr_forest[coord] == FORESTED:
-                            if np.random.rand() < p_spread:
-                                pred_forest[coord] = ON_FIRE
-        #Set each initally burning spot to BARE
-        for coord in burning_spots:
-            pred_forest[coord] = BARE
-        #Put the predicted timestep as
-        forest.append(pred_forest)
-        curr_forest = pred_forest
-
-    #change the list of nparrays into an nparray
-    forest = np.array(forest)
-    #remove the ghost/buffer nodes
-    forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
-    #get the time to burn from the final shape (length of first dimensition/#oftimesteps)
-    time_to_burn = forest.shape[0]
-    #returns the count of forested elements in the final forest
-    # works by summing up the "True [1]" values where the test is if element = 2
-    num_forested_remaining = np.where(forest[-1,:,:] == FORESTED, True, False).sum()
-    #forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
-    return forest, time_to_burn, num_forested_remaining
-
 #Test the new model compared to the original:
 #test = np.ones((4,4), dtype = int) * 2
 #test[3,3] = 3
@@ -400,10 +374,13 @@ for spread_prob in np.arange(0,1.1,0.1):
     forest_sq = []
     for trial_idx in np.arange(num_trials_per_spread):
         init_cond = create_initial_conditions(num_x, num_y, init_onfire_prob=P_INIT_FIRE)
-        curr_model = model_fire_spread(init_cond, spread_prob)
+        curr_model = model_fire_spread(init_cond, p_spread = spread_prob)
         #store the time_to_burn and num_forested remaining
         burn_time.append(curr_model[1]-1)
         forest_sq.append(curr_model[2])
+        #plt.imshow(curr_model[0][-1,:,:], vmin = 1, vmax = 3, cmap=forest_cmap)
+        #plt.suptitle(f"spread: {spread_prob}, forest_sq: {curr_model[2]}")
+        #plt.show()
     varying_spread_results['Burning Time'].append(np.mean(burn_time))
     varying_spread_results['Remaining Forest Squares'].append(np.mean(forest_sq))
     varying_spread_results['Spread Probability'].append(spread_prob)
@@ -411,16 +388,30 @@ for spread_prob in np.arange(0,1.1,0.1):
 for bare_prob in np.arange(0,1.1,0.1):
     burn_time = []
     forest_sq = []
+    #final_model = []
+    #first_frame = []
     for trial_idx in np.arange(num_trials_per_spread):
         init_cond = create_initial_conditions(num_x=num_x, num_y=num_y,
                                           init_onfire_prob=P_INIT_FIRE, init_bare_prob=bare_prob)
-        curr_model = model_fire_spread(init_cond, P_SPREAD)
+        curr_model = model_fire_spread(init_cond, p_spread = P_SPREAD)
         #store the time_to_burn and num_forested remaining
+        #test visualization
         burn_time.append(curr_model[1]-1)
         forest_sq.append(curr_model[2])
+        #first_frame.append(init_cond)
+        #final_model.append(curr_model[0][-1,:,:])
     varying_bare_results['Burning Time'].append(np.mean(burn_time))
     varying_bare_results['Remaining Forest Squares'].append(np.mean(forest_sq))
     varying_bare_results['Initial Bare Probability'].append(bare_prob)
+    burn_time.append(curr_model[1]-1)
+    forest_sq.append(curr_model[2])
+    #print(final_model)
+    #print(np.mean(final_model, axis = 0))
+    #plt.imshow(np.mean(first_frame, axis = 0), vmin = 1, vmax = 3, cmap = forest_cmap)
+    #plt.show()
+    #plt.imshow(np.mean(final_model, axis=0), vmin = 1, vmax = 3, cmap=forest_cmap)
+    #plt.suptitle(f"init_bare_prob: {bare_prob}")
+    #plt.show()
 
 fig = plt.figure(figsize=(10,8), constrained_layout=True)
 fig.suptitle("Fire Spread Probability and Bare Forest Spot influence on Wildfire Spread")
@@ -429,7 +420,6 @@ titles = [ 'Varying Fire Spread Probability [FULL FOREST START]', 'Varying Initi
 variables = [varying_spread_results, varying_bare_results]
 x_vars = ['Spread Probability', 'Initial Bare Probability']
 y_vars = ['Burning Time', 'Remaining Forest Squares']
-fig.legend()
 for row, subfig in enumerate(subfigs):
     subfig.suptitle(titles[row])
     axs = subfig.subplots(nrows=1, ncols=2)
@@ -582,8 +572,8 @@ def model_illness_spread(initial_conditions, times = 0, p_spread = 1, p_fatal = 
 #Test the illness spread using similar tests to the forest one
 
 # Create an initial frame for the tests
-print("\t TESTING 6x6 MATRIX \n"
-      +"\t SICK IN MIDDLE\n")
+#print("\t TESTING 6x6 MATRIX \n"
+#      +"\t SICK IN MIDDLE\n")
 #get the modeled output for Test 1
 #create 3x3 matix with initial values of FORESTED
 temp_num_x = 3
@@ -617,13 +607,12 @@ fig = plt.figure(constrained_layout=True)
 fig.suptitle("Illness Model Validation")
 subfigs = fig.subfigures(nrows=2, ncols = 1)
 test_titles = [ f'6 BY 6 GRID', '20 BY 30 GRID']
-fig.legend()
 for row, subfig in enumerate(subfigs):
     subfig.suptitle(test_titles[row])
     axs = subfig.subplots(nrows=1, ncols=temp_num_times)
     for col, ax in enumerate(axs):
         curr_model = test_illness_models[row][0]
-        print(row, col)
+        #print(row, col)
         ax.imshow(curr_model[col,:,:],vmin = 0, vmax = 4, cmap = illness_cmap)
         ax.grid(False)
         ax.set_title(f"T = {col}")
@@ -710,7 +699,6 @@ titles = [ 'Varying Survival Rate [NO INITIAL VACCINATIONS]', 'Varying Initial V
 variables = [varying_spread_results, varying_immune_results]
 x_vars = ['Survival Rate', 'Initial Vaccinated Rate']
 y_vars = ['Spreading Time', 'Remaining Living Population', 'Dead Population']
-fig.legend()
 for row, subfig in enumerate(subfigs):
     subfig.suptitle(titles[row])
     axs = subfig.subplots(nrows=1, ncols=2)
@@ -726,3 +714,6 @@ for row, subfig in enumerate(subfigs):
         ax.set_xlabel(x_vars[row])
 
 plt.show()
+
+
+
