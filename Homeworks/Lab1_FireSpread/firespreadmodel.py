@@ -161,10 +161,8 @@ def model_spread(initial_conditions, times = 0, p_spread = 1, p_recover = 1):
 
             #Flatten probabilites by rows, returns copy
             curr_rows_probs = probs.flatten(order = 'C') #flatten by rows
-            #create mask to allow spread if probability threshold is also reached
-            spread_mask = (curr_rows == SPREADABLE)
             #create a list of indicies of SPREADABLE cells
-            spreadable_idx = np.argwhere( spread_mask ).squeeze() #squeeze to remove wrapper dim
+            spreadable_idx = np.argwhere( init_spreadable_mask ).squeeze() #squeeze to remove wrapper dim
             #create a list of orthogonal neighbors to the SPREADABLE cells
             neighboring_idxs = np.array([spreadable_idx+1, spreadable_idx-1, spreadable_idx+num_y, spreadable_idx-num_y], dtype=int)
             # Create a mask for neighbors who are HEALTHY
@@ -192,16 +190,16 @@ def model_spread(initial_conditions, times = 0, p_spread = 1, p_recover = 1):
             #Flatten data by rows, returns copy
             curr_rows = curr_timestep.flatten(order = 'C') #flatten by rows
 
-            #create masks for initial SPREADABLE and HEALTHY
+            #create masks for initial HEALTHY
             init_spreadable_mask = curr_rows == SPREADABLE
             init_healthy_mask = curr_rows == HEALTHY
 
             #Flatten probabilites by rows, returns copy
             curr_rows_probs = probs.flatten(order = 'C') #flatten by rows
             #create mask to allow spread if probability threshold is also reached
-            spread_mask = (curr_rows == SPREADABLE)
+
             #create a list of indicies of SPREADABLE cells
-            spreadable_idx = np.argwhere( spread_mask ).squeeze() #squeeze to remove wrapper dim
+            spreadable_idx = np.argwhere( init_spreadable_mask ).squeeze() #squeeze to remove wrapper dim
             #create a list of orthogonal neighbors to the SPREADABLE cells
             neighboring_idxs = np.array([spreadable_idx+1, spreadable_idx-1, spreadable_idx+num_y, spreadable_idx-num_y], dtype=int)
             # Create a mask for neighbors who are HEALTHY
