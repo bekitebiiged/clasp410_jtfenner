@@ -1,5 +1,5 @@
 '''
-The following code is used to execute Lab01 in for CLaSP410 at University of Michigan
+The following code is used to execute Lab01 for CLaSP410 at University of Michigan
 '''
 #Import required libraries
 import matplotlib.pyplot as plt
@@ -588,128 +588,124 @@ SICK = ON_FIRE      #both equal to 3
 IMMUNE = BARE       #both equal to 1
 DEAD = 0            #new constant
 
-#new check to add is 'p_fatal' or 'p_survive' which is the likelihood a SICK person will DIE or IMMUNE
-
-
-def model_illness_spread(initial_conditions, times = 0, p_spread = 1, p_fatal = 0):
-    '''
-    Function to model Zombie Virus Spread based on initial conditions and spreading probability
-
-    --------------
-        INPUTS
-    --------------
-        initial_conditions:
-            2D Numpy array of initial conditions for a FOREST
-        p_spread:
-            Probability of illness to spread to healthy cells
-        p_fatal:
-            Probability sick cell will perish (1 - p_survive)
-    --------------
-        RETURNS
-    --------------
-        illness_spread:
-            3D Numpy array of calculated illness spread
-        time_to_spread:
-            Number of time steps required for illness to spread (depth of 3D array)
-        num_healthy:
-            The count of healthy cells at end of model
-        num_alive:
-            The count of immune cells at end of model
-        num_dead:
-            The count of dead cells at the end of the model
-    '''
-
-    #Create a 2D array based on the intitial conditions buffered by 'ghost nodes'
-    curr_model_slice = initialize_model_array(initial_conditions)
-    illness_spread = [curr_model_slice]
-    #get dimensions of the initial array x,y (removing those ghost nodes)
-    init_shape = initial_conditions.shape
-    #get the num_x and y for the og array (to use as reference)
-    num_x = init_shape[0]
-    num_y = init_shape[1]
-
-    if times == 0:
-        while(SICK in curr_model_slice):
-            #create a predicted model output starting from the curr_forest
-            pred_model_slice = np.copy(curr_model_slice)
-            #create a list of spots that were initially sick
-            initially_sick = []
-            #loop through each element in the curr_model_slice (not the bounding IMMUNE values)
-            for curr_row in range(1,num_x+1):
-                for curr_col in range(1,num_y+1):
-
-                    #Check to see if the current element is SICK
-                    if(curr_model_slice[curr_row,curr_col] == SICK):
-                        #Add the current burning spot to the inital burning list
-                        initially_sick.append((curr_row, curr_col))
-                        #find the neighboring grid spots
-                        neighbors = get_neighbors(curr_row, curr_col)
-                        #go through each neighboor to evaluate predicted value for next time step
-                        for coord in neighbors:
-                            #Fire spots can spread to Forested neighboors
-                            if curr_model_slice[coord] == HEALTHY:
-                                if np.random.rand() < p_spread:
-                                    pred_model_slice[coord] = SICK
-            #Check if each initially SICK cell becomes IMMUNE or DEAD
-            for coord in initially_sick:
-                p = np.random.rand()
-                if p < p_fatal:
-                    pred_model_slice[coord] = DEAD
-                else:
-                    pred_model_slice[coord] = IMMUNE
-            #Put the predicted timestep as
-            illness_spread.append(pred_model_slice)
-            curr_model_slice = pred_model_slice
-    else:
-        for time in range(times):
-            #create a predicted model output starting from the curr_forest
-            pred_model_slice = np.copy(curr_model_slice)
-            #create a list of spots that were initially sick
-            initially_sick = []
-            #loop through each element in the curr_model_slice (not the bounding IMMUNE values)
-            for curr_row in range(1,num_x+1):
-                for curr_col in range(1,num_y+1):
-
-                    #Check to see if the current element is SICK
-                    if(curr_model_slice[curr_row,curr_col] == SICK):
-                        #Add the current burning spot to the inital burning list
-                        initially_sick.append((curr_row, curr_col))
-                        #find the neighboring grid spots
-                        neighbors = get_neighbors(curr_row, curr_col)
-                        #go through each neighboor to evaluate predicted value for next time step
-                        for coord in neighbors:
-                            #Fire spots can spread to Forested neighboors
-                            if curr_model_slice[coord] == HEALTHY:
-                                if np.random.rand() < p_spread:
-                                    pred_model_slice[coord] = SICK
-            #Check if each initially SICK cell becomes IMMUNE or DEAD
-            for coord in initially_sick:
-                p = np.random.rand()
-                if p < p_fatal:
-                    pred_model_slice[coord] = DEAD
-                else:
-                    pred_model_slice[coord] = 4
-            #Put the predicted timestep as
-            illness_spread.append(pred_model_slice)
-            curr_model_slice = pred_model_slice
-
-    #change the list of nparrays into an nparray
-    illness_spread = np.array(illness_spread)
-    #remove the ghost/buffer nodes
-    illness_spread = illness_spread[:,slice(1,num_x+1),slice(1,num_y+1)]
-    #Get the runtime (1 minus depth as first time is T = 0)
-    time_to_spread = illness_spread.shape[0]
-
-    #Get remaining count of HEALTHY and IMMUNE cells
-    #works by summing up the "True" (equal 1) values where the test is if element = 2
-    num_healthy = np.where(illness_spread[-1,:,:] == HEALTHY, True, False).sum()
-    num_immune = np.where(illness_spread[-1:,:] == IMMUNE, True, False).sum()
-    num_dead = np.where(illness_spread[-1,:,:] == DEAD, True, False).sum()
-    #forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
-    return illness_spread, time_to_spread, num_healthy, num_immune, num_dead
+#ef model_illness_spread(initial_conditions, times = 0, p_spread = 1, p_fatal = 0):
+#   '''
+#   Function to model Zombie Virus Spread based on initial conditions and spreading probability
+#
+#   --------------
+#       INPUTS
+#   --------------
+#       initial_conditions:
+#           2D Numpy array of initial conditions for a FOREST
+#       p_spread:
+#           Probability of illness to spread to healthy cells
+#       p_fatal:
+#           Probability sick cell will perish (1 - p_survive)
+#   --------------
+#       RETURNS
+#   --------------
+#       illness_spread:
+#           3D Numpy array of calculated illness spread
+#       time_to_spread:
+#           Number of time steps required for illness to spread (depth of 3D array)
+#       num_healthy:
+#           The count of healthy cells at end of model
+#       num_alive:
+#           The count of immune cells at end of model
+#       num_dead:
+#           The count of dead cells at the end of the model
+#   '''
+#
+#   #Create a 2D array based on the intitial conditions buffered by 'ghost nodes'
+#   curr_model_slice = initialize_model_array(initial_conditions)
+#   illness_spread = [curr_model_slice]
+#   #get dimensions of the initial array x,y (removing those ghost nodes)
+#   init_shape = initial_conditions.shape
+#   #get the num_x and y for the og array (to use as reference)
+#   num_x = init_shape[0]
+#   num_y = init_shape[1]
+#
+#   if times == 0:
+#       while(SICK in curr_model_slice):
+#           #create a predicted model output starting from the curr_forest
+#           pred_model_slice = np.copy(curr_model_slice)
+#           #create a list of spots that were initially sick
+#           initially_sick = []
+#           #loop through each element in the curr_model_slice (not the bounding IMMUNE values)
+#           for curr_row in range(1,num_x+1):
+#               for curr_col in range(1,num_y+1):
+#
+#                   #Check to see if the current element is SICK
+#                   if(curr_model_slice[curr_row,curr_col] == SICK):
+#                       #Add the current burning spot to the inital burning list
+#                       initially_sick.append((curr_row, curr_col))
+#                       #find the neighboring grid spots
+#                       neighbors = get_neighbors(curr_row, curr_col)
+#                       #go through each neighboor to evaluate predicted value for next time step
+#                       for coord in neighbors:
+#                           #Fire spots can spread to Forested neighboors
+#                           if curr_model_slice[coord] == HEALTHY:
+#                               if np.random.rand() < p_spread:
+#                                   pred_model_slice[coord] = SICK
+#           #Check if each initially SICK cell becomes IMMUNE or DEAD
+#           for coord in initially_sick:
+#               p = np.random.rand()
+#               if p < p_fatal:
+#                   pred_model_slice[coord] = DEAD
+#               else:
+#                   pred_model_slice[coord] = IMMUNE
+#           #Put the predicted timestep as
+#           illness_spread.append(pred_model_slice)
+#           curr_model_slice = pred_model_slice
+#   else:
+#       for time in range(times):
+#           #create a predicted model output starting from the curr_forest
+#           pred_model_slice = np.copy(curr_model_slice)
+#           #create a list of spots that were initially sick
+#           initially_sick = []
+#           #loop through each element in the curr_model_slice (not the bounding IMMUNE values)
+#           for curr_row in range(1,num_x+1):
+#               for curr_col in range(1,num_y+1):
+#
+#                   #Check to see if the current element is SICK
+#                   if(curr_model_slice[curr_row,curr_col] == SICK):
+#                       #Add the current burning spot to the inital burning list
+#                       initially_sick.append((curr_row, curr_col))
+#                       #find the neighboring grid spots
+#                       neighbors = get_neighbors(curr_row, curr_col)
+#                       #go through each neighboor to evaluate predicted value for next time step
+#                       for coord in neighbors:
+#                           #Fire spots can spread to Forested neighboors
+#                           if curr_model_slice[coord] == HEALTHY:
+#                               if np.random.rand() < p_spread:
+#                                   pred_model_slice[coord] = SICK
+#           #Check if each initially SICK cell becomes IMMUNE or DEAD
+#           for coord in initially_sick:
+#               p = np.random.rand()
+#               if p < p_fatal:
+#                   pred_model_slice[coord] = DEAD
+#               else:
+#                   pred_model_slice[coord] = 4
+#           #Put the predicted timestep as
+#           illness_spread.append(pred_model_slice)
+#           curr_model_slice = pred_model_slice
+#
+#   #change the list of nparrays into an nparray
+#   illness_spread = np.array(illness_spread)
+#   #remove the ghost/buffer nodes
+#   illness_spread = illness_spread[:,slice(1,num_x+1),slice(1,num_y+1)]
+#   #Get the runtime (1 minus depth as first time is T = 0)
+#   time_to_spread = illness_spread.shape[0]
+#
+#   #Get remaining count of HEALTHY and IMMUNE cells
+#   #works by summing up the "True" (equal 1) values where the test is if element = 2
+#   num_healthy = np.where(illness_spread[-1,:,:] == HEALTHY, True, False).sum()
+#   num_immune = np.where(illness_spread[-1:,:] == IMMUNE, True, False).sum()
+#   num_dead = np.where(illness_spread[-1,:,:] == DEAD, True, False).sum()
+#   #forest = forest[:,slice(1,num_x+1),slice(1,num_y+1)]
+#   return illness_spread, time_to_spread, num_healthy, num_immune, num_dead
 
 #Test the illness spread using similar tests to the forest one
-
 # Create an initial frame for the tests
 #print("\t TESTING 6x6 MATRIX \n"
 #      +"\t SICK IN MIDDLE\n")
