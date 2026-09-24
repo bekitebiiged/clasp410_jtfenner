@@ -26,7 +26,7 @@ def calculate_temp_time(init_temp, final_temp, env_temp = 20, k = 1):
     return total_time
 
 
-
+#Set the
 ENV_TEMP = 20 #Celcius
 K = 1 #s^-1
 
