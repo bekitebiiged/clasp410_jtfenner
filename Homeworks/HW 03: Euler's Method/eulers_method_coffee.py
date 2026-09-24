@@ -115,7 +115,7 @@ ax.plot(np.log(timesteps), cooling_times['euler'], label = "Euler's Method")
 ax.plot(np.log(timesteps), cooling_times['analytic'], ls='-.', label = "Analytic")
 
 ax.set_title("Cooling Time Calcuated (Numerical Method vs Analytic Solution)\n"
-             + "145C $\\to$ 18C, K = 0.1")
+             + "145C $\\to$ 18C, K = 0.1, Tolerance = 0.1")
 
 ax.xaxis.set_inverted(True)
 ax.set_xlabel("Timestep ($\\ln{\\Delta \\text{t}}$(s))")
