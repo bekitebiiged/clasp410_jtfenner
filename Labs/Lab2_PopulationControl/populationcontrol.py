@@ -258,6 +258,7 @@ def euler_solve_predmodel(N, coefs, d_t, timelength):
     timeline = [0]
 
     #compute number of steps (ensure no divide by zero!)
+    num_steps : int
     try:
         num_steps = int(timelength / d_t) #units in timesteps
     except ZeroDivisionError:
@@ -274,7 +275,7 @@ def euler_solve_predmodel(N, coefs, d_t, timelength):
         N1.append(curr_N1)
         N2.append(curr_N2)
         #add the current time step to the timeline units of d_t (years)
-        timeline.append(timestep * d_t)
+        timeline.append(timestep / (1 / d_t))
 
     return (N1, N2), timeline
 
@@ -372,7 +373,6 @@ def rk45_solve_predmodel(N, coefs, d_t, timelength):
         r.integrate(r.t + d_t)
         n1.append(r.y[0])
         n2.append(r.y[1])
-        print(r.y[0], r.y[1])
 
     return [n1, n2]
 
@@ -394,14 +394,14 @@ def run_question1_compmodel():
     ax2.hlines(steady_state_solution, 0, timelength, ls = 'solid',
             linewidth = 2, color = 'black', label = 'Steady Soltution')
 
-    ax1.plot(euler_pops[0], color = 'teal', alpha = 0.8,  label = "N1")
-    ax1.plot(euler_pops[1], color = 'sandybrown', alpha = 0.8, ls = '--', label = "N2")
+    ax1.plot(timeline, euler_pops[0], color = 'teal', alpha = 0.8,  label = "N1")
+    ax1.plot(timeline, euler_pops[1], color = 'sandybrown', alpha = 0.8, ls = '--', label = "N2")
     ax2.plot(rk45_pops[0], color = 'teal', alpha = 0.8,  label = "N1")
     ax2.plot(rk45_pops[1], color = 'sandybrown', alpha = 0.8, ls = '--', label = "N2")
 
 
 
-    ax1.set_xlabel("Time (years)")
+    fig.supxlabel("Time (years)")
     ax1.set_ylabel("Population Density")
     ax2.set_ylabel("Population Density")
     #Turn the yaxis ticks back on
@@ -420,27 +420,26 @@ def run_question1_predmodel():
     coefs = [1, 2, 1, 3] #[a, b, c, d]
     d_t = 0.05 #years
     timelength = 100 #years
-    euler_pops2, timeline2 = euler_solve_predmodel(init_pops, coefs, d_t, timelength)
-    rk45_pops2 = rk45_solve_predmodel(init_pops, coefs, d_t, timelength)
+    euler_pops, timeline = euler_solve_predmodel(init_pops, coefs, d_t, timelength)
+    rk45_pops = rk45_solve_predmodel(init_pops, coefs, d_t, timelength)
     #steady_state_solution = get_lotvolt_comp_solution(coefs)
-
     #Create the fig and axis objects. They should sharex and y to be able to compare easily
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (10, 6), sharex=True, sharey=True)
-
-    ax1.plot(euler_pops2[0], color = 'teal', alpha = 0.8,  label = "N1")
-    ax1.plot(euler_pops2[1], color = 'sandybrown', alpha = 0.8, ls = '--', label = "N2")
-    ax2.plot(rk45_pops2[0], color = 'teal', alpha = 0.8,  label = "N1")
-    ax2.plot(rk45_pops2[1], color = 'sandybrown', alpha = 0.8, ls = '--', label = "N2")
-    print(rk45_pops2)
+    ax1.plot(euler_pops[0], color = 'teal', alpha = 0.8,  label = "Prey")
+    ax1.plot(euler_pops[1], color = 'sandybrown', alpha = 0.8, ls = '--', label = "Predator")
+    ax2.plot(timeline, rk45_pops[0], color = 'teal', alpha = 0.8,  label = "Prey")
+    ax2.plot(timeline, rk45_pops[1], color = 'sandybrown', alpha = 0.8, ls = '--', label = "Predator")
 
 
-    ax1.set_xlabel("Time (years)")
+    fig.supxlabel("Time (years)")
     ax1.set_ylabel("Population Density")
     ax2.set_ylabel("Population Density")
     #Turn the yaxis ticks back on
     ax2.yaxis.set_tick_params(labelbottom=True)
+    # Set the ylim to 0, 1 to ensure physical values
+    ax1.set_ylim(0, 1)
 
-    fig.suptitle("Lokta-Volterra Competition Model Solutions"
+    fig.suptitle("Lokta-Volterra Pred-Prey Model Solutions"
                 + f"\n $\\Delta{{T}}$ = {d_t} years")
     ax1.set_title("Euler")
     ax2.set_title("RK45")
