@@ -423,7 +423,6 @@ def run_question1_predmodel():
     #completes question 1 for the CLIMATE410 Homework
 
     #Adjust the initial conditions here
-
     init_pops = [0.3, 0.6] #[species1, species2]
     coefs = [1, 2, 1, 3] #[a, b, c, d]
     d_t = 0.05 #years
@@ -437,7 +436,6 @@ def run_question1_predmodel():
     ax1.plot(euler_pops[1], color = 'sandybrown', alpha = 0.8, ls = '--', label = "Predator")
     ax2.plot(timeline, rk45_pops[0], color = 'teal', alpha = 0.8,  label = "Prey")
     ax2.plot(timeline, rk45_pops[1], color = 'sandybrown', alpha = 0.8, ls = '--', label = "Predator")
-
 
     fig.supxlabel("Time (years)")
     ax1.set_ylabel("Population Density")
