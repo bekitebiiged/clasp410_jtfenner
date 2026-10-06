@@ -6,8 +6,7 @@ import matplotlib.pyplot as plt
 
 
 #Set the plotting styles:
-#Have large suptitles, titles, constrained layout
-#Make lines big-ish and have a nicer facecolor and legend box color
+#Update these to adjust plotting aesthetics
 plt.style.use("Solarize_Light2")
 plt.rcParams['figure.titlesize'] = 20
 plt.rcParams['figure.constrained_layout.use'] = True
@@ -377,10 +376,15 @@ def rk45_solve_predmodel(N, coefs, d_t, timelength):
     return [n1, n2]
 
 def run_question1_compmodel():
+    #completes question 1 for the CLIMATE410 Homework
+
+    #Adjust the initial conditions here
     init_pops = [0.3, 0.6] #[species1, species2]
     coefs = [1, 2, 1, 3] #[a, b, c, d]
     d_t = 1 #years
     timelength = 100 #years
+
+    #get the calculations
     euler_pops, timeline = euler_solve_compmodel(init_pops, coefs, d_t, timelength)
     rk45_pops = rk45_solve_compmodel(init_pops, coefs, d_t, timelength)
     steady_state_solution = get_lotvolt_comp_solution(coefs)
@@ -416,6 +420,10 @@ def run_question1_compmodel():
     plt.show()
 
 def run_question1_predmodel():
+    #completes question 1 for the CLIMATE410 Homework
+
+    #Adjust the initial conditions here
+
     init_pops = [0.3, 0.6] #[species1, species2]
     coefs = [1, 2, 1, 3] #[a, b, c, d]
     d_t = 0.05 #years
@@ -454,6 +462,6 @@ def run_question1_predmodel():
 #print(get_lotvolt_comp_solution(4,4,2,5)) #return [-0, 1] (good enough)
 #print(get_lotvolt_comp_solution(3, 4, 5, 6)) #good
 
-
+#Run the functions to complete each question
 run_question1_compmodel()
 run_question1_predmodel()
