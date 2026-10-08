@@ -376,6 +376,7 @@ def rk45_solve_predmodel(N, coefs, d_t, timelength):
     return [n1, n2]
 
 def run_question1_compmodel():
+
     #completes question 1 for the CLIMATE410 Homework
 
     #Adjust the initial conditions here
@@ -453,6 +454,8 @@ def run_question1_predmodel():
     ax2.legend()
     plt.show()
 
+def run_question2_compmodel():
+    print("")
 
 #Uncomment print statements to test the algebraic solution function
 #print(get_lotvolt_comp_solution(1, 1, 1, 1)) #returns divide by 0 error (good)
