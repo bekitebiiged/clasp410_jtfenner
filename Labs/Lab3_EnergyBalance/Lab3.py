@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pprint as pprint
+
+#Create a debug feature for the code to print out a bunch of info!
+debug = False
 
 #Set the plotting styles:
 #Update these to adjust plotting aesthetics
@@ -12,8 +14,11 @@ plt.rcParams['axes.facecolor'] = 'gainsboro'
 plt.rcParams['lines.linewidth'] = 3
 plt.rcParams['legend.facecolor'] = 'oldlace'
 
-#Create a debug feature for the code to print out a bunch of info!
-debug = False
+color1 = 'teal'
+color2 = 'sandybrown'
+#Create a 'tolerance' for the upper and lower bounds for each axis
+#Used mainly for adjusting values and having a good h or vline for reference
+tol = 0.25
 
 def create_coef_matrix(num_layers = 1, e = 1):
     '''
@@ -62,10 +67,6 @@ def create_coef_matrix(num_layers = 1, e = 1):
 
     return coefs
 
-
-#create_coef_matrix(num_layers=3)
-
-
 def model_atmosphere(num_layers, solar_irradiance, e, albedo):
     '''
     A*fluxes = b, solving for fluxes!
@@ -112,23 +113,108 @@ model_atmosphere(0, 1361, 1, 0)
 S_0 = 1350 # Wm^-2
 
 #We will now conduct experiment 1
-# see effect of emissivity on surface temperature
+def experiment1():
+    #see effect of emissivity on surface temperature
 
-#create list of emissivities 0 -> 1, 0.1 step
-emissivities = np.arange(0,1.1,0.1)
-#create empty list of surface temps
-surf_temps = []
+    #create list of emissivities 0 -> 1, 0.1 step
+    emissivities = np.arange(0,1.1,0.1)
+    #create empty list of surface temps
+    surf_temps = []
 
-for e in emissivities:
-    temp = model_atmosphere(1, S_0, e, 0)
-    surf_temps.append(temp[0])
+    for e in emissivities:
+        temp = model_atmosphere(1, S_0, e, 0)
+        surf_temps.append(temp[0])
 
-fig, ax = plt.subplots(1, 1, figsize = (8, 5))
+    fig, ax = plt.subplots(1, 1, figsize = (8, 5))
+    ax.plot(surf_temps, emissivities)
+    ax.set_title("1-Layer Atmosphere Surface Temperature")
+    ax.set_ylabel("Emissivity")
+    ax.set_xlabel("Surface Temperature [K]")
+    plt.show()
 
-ax.plot(surf_temps, emissivities)
-ax.set_title("1-Layer Atmosphere Surface Temperature")
-ax.set_ylabel("Emissivity")
-ax.set_xlabel("Surface Temperature [K]")
-plt.show()
+def plot_nlayer_surftemp(num_layers, solar_irradiance, e, albedo, temp_marker = None, title = None):
+    #create N-layer model
 
-#create N-layer model
+    #create number of layers, starting with 0 -> 10 (count numbers/ints)
+    layers = range(0, num_layers+1, 1)
+    #create empty surf_temp list
+    surf_temps = []
+    for layer in layers:
+        temp = model_atmosphere(layer, solar_irradiance, e, albedo)
+        surf_temps.append(temp[0])
+
+
+    fig, ax = plt.subplots(1, 1, figsize = (8, 5))
+    ax.plot(layers, surf_temps, color = color1)
+
+    #Ensure the temp marker is indicated and a proper value (to have a dotted line marker!)
+    if temp_marker is not None:
+        if (isinstance(temp_marker, int) or isinstance(temp_marker, float)):
+            ax.hlines(  temp_marker,
+                        0,
+                        num_layers+1,
+                        label = f'{temp_marker} K',
+                        color = 'black',
+                        linestyles='--',
+                        linewidth = 2
+            )
+        else:
+            raise ValueError("temp_marker must be a float or int!")
+
+    if title is not None:
+        if isinstance(title, str):
+            ax.set_title(title)
+        else:
+            raise ValueError("title must be a string")
+    else:
+        ax.set_title("N-Layer Atmosphere Surface Temperature")
+    ax.set_xbound(-tol, num_layers + tol)
+    ax.set_xticks(range(0,num_layers+1))
+
+    ax.set_ylabel("Surface Temperature [K]")
+    ax.set_xlabel("Number of Layers")
+    ax.legend()
+    plt.show()
+
+def plot_temp_profile(num_layers, solar_irradiance, e, albedo, temp_marker = None, title = None):
+
+    #create the model and get temps
+    temp_prof = model_atmosphere(num_layers, solar_irradiance, e, 0)
+    fig, ax = plt.subplots(1, 1, figsize = (8, 5))
+    ax.plot(temp_prof, np.arange(num_layers+1), color = color1)
+
+    #If the temp marker is indicated and a proper value
+    if temp_marker is not None:
+        if (isinstance(temp_marker, int) or isinstance(temp_marker, float)):
+            ax.vlines(  temp_marker,
+                        0,
+                        num_layers+1,
+                        label = f'{temp_marker} K',
+                        color = 'black',
+                        linestyles='--',
+                        linewidth = 2
+            )
+        else:
+            raise ValueError("temp_marker must be a float or int!")
+
+    ax.set_title(f"{num_layers}-Layer Temperature Profile")
+    ax.set_ylabel("Atmospheric Layer")
+    ax.set_xlabel("Temperature [K]")
+    ax.set_ylim(-tol, num_layers + tol)
+    ax.legend()
+    plt.show()
+
+
+def validation_tests():
+    print(create_coef_matrix(num_layers=3))
+
+
+#See Surface Temp based on N-Layers
+plot_nlayer_surftemp(10, S_0, e = 0.225, albedo = 0, temp_marker = 288)
+
+#Show Earth's Temp profile
+plot_temp_profile(2, S_0, e = 0.255, albedo = 0, temp_marker = 288)
+
+#Check out Venus's surface temperature based on N-Layers
+plot_nlayer_surftemp(30, 2600, e = 1, albedo = 0, temp_marker= 700, title = "N-Layer Venus Atmosphere")
+
