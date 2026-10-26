@@ -6,13 +6,17 @@ debug = False
 
 #Set the plotting styles:
 #Update these to adjust plotting aesthetics
-plt.style.use("Solarize_Light2")
-plt.rcParams['figure.titlesize'] = 20
-plt.rcParams['figure.constrained_layout.use'] = True
-plt.rcParams['axes.titlesize'] = 18
+plt.rcParams['figure.titlesize'] = 22
+plt.rcParams['figure.constrained_layout.use'] = False
+plt.rcParams['axes.titlesize'] = 20
 plt.rcParams['axes.facecolor'] = 'gainsboro'
+plt.rcParams['axes.labelcolor'] = 'black'
+plt.rcParams['axes.labelsize'] = 'large'
 plt.rcParams['lines.linewidth'] = 3
 plt.rcParams['legend.facecolor'] = 'oldlace'
+plt.rcParams['xtick.color'] = 'black'
+plt.rcParams['ytick.color'] = 'black'
+plt.rcParams['axes.grid'] = True
 
 color1 = 'teal'
 color2 = 'sandybrown'
