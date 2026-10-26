@@ -1,9 +1,19 @@
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import pprint as pprint
 
+#Set the plotting styles:
+#Update these to adjust plotting aesthetics
+plt.style.use("Solarize_Light2")
+plt.rcParams['figure.titlesize'] = 20
+plt.rcParams['figure.constrained_layout.use'] = True
+plt.rcParams['axes.titlesize'] = 18
+plt.rcParams['axes.facecolor'] = 'gainsboro'
+plt.rcParams['lines.linewidth'] = 3
+plt.rcParams['legend.facecolor'] = 'oldlace'
+
 #Create a debug feature for the code to print out a bunch of info!
-debug = True
+debug = False
 
 def create_coef_matrix(num_layers = 1, e = 1):
     '''
@@ -94,16 +104,31 @@ def model_atmosphere(num_layers, solar_irradiance, e, albedo):
         print("fluxes are: ", fluxes)
         print("temps are: ", temps)
 
+    return temps
+
 
 model_atmosphere(0, 1361, 1, 0)
 
+S_0 = 1350 # Wm^-2
 
+#We will now conduct experiment 1
+# see effect of emissivity on surface temperature
 
+#create list of emissivities 0 -> 1, 0.1 step
+emissivities = np.arange(0,1.1,0.1)
+#create empty list of surface temps
+surf_temps = []
 
+for e in emissivities:
+    temp = model_atmosphere(1, S_0, e, 0)
+    surf_temps.append(temp[0])
 
+fig, ax = plt.subplots(1, 1, figsize = (8, 5))
 
+ax.plot(surf_temps, emissivities)
+ax.set_title("1-Layer Atmosphere Surface Temperature")
+ax.set_ylabel("Emissivity")
+ax.set_xlabel("Surface Temperature [K]")
+plt.show()
 
-
-
-
-
+#create N-layer model
