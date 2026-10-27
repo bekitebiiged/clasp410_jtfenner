@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-#Create a debug feature for the code to print out a bunch of info!
-debug = False
+#Create a DEBUG feature for the code to print out a bunch of info!
+DEBUG = False
+COEF_DEBUG = False
 
 #Set the plotting styles:
 #Update these to adjust plotting aesthetics
@@ -18,11 +19,11 @@ plt.rcParams['xtick.color'] = 'black'
 plt.rcParams['ytick.color'] = 'black'
 plt.rcParams['axes.grid'] = True
 
-color1 = 'teal'
-color2 = 'sandybrown'
-#Create a 'tolerance' for the upper and lower bounds for each axis
+COLOR1 = 'teal'
+COLOR2 = 'sandybrown'
+#Create a 'TOLerance' for the upper and lower bounds for each axis
 #Used mainly for adjusting values and having a good h or vline for reference
-tol = 0.25
+TOL = 0.25
 
 def create_coef_matrix(num_layers = 1, e = 1):
     '''
@@ -60,18 +61,58 @@ def create_coef_matrix(num_layers = 1, e = 1):
     #Create a diagonal matrix with -2e along the diagonal
     # help with getting the diagonal matrix!
     # https://stackoverflow.com/questions/58139494/how-can-i-create-a-diagonal-matrix-with-numpy
-    diag = np.ones(num_layers+1) * -2 * e
-    diag[0] = -1
 
-    #create a matrix with a diag
-    coefs = np.diag(diag, 0)
-    #add the 1-above/below off-diagonal values
-    coefs += np.diag(np.ones(num_layers) * e, 1)
-    coefs += np.diag(np.ones(num_layers) * e, -1)
+    first_row = [-1]
+    for col in range(1,num_layers+1):
+        first_row.append( float(e * (1-e)**(np.max( (0,(col-1)) )) ) )
+        if DEBUG:
+            print(f"curr element: e * (1-e)^{(np.max( (0, (col-1))) )}")
+    if DEBUG:
+        print(f"FIRST ROW OF COEF IS : \n{first_row}")
+
+    diag_list = []
+    #interate over the number of diagonals to create
+    for curr_diag_idx in range(num_layers+1):
+        #first diag = 0
+        #the current diagonal is equal to the first row's idx
+        #the length of the diagonal gets smaller as idx increases!
+        curr_diag = np.ones(num_layers + 1 - curr_diag_idx) * first_row[curr_diag_idx]
+        #the center diag is treated specially
+        if (curr_diag_idx == 0):
+            #the values from 1 -> end are equal to -2e (first value is -1)
+            curr_diag[1:] = curr_diag[1:] * 2 * e
+        #all off-center diagonals
+        else:
+            #the values are the same, just mutiplyed by another e (due to absorption from that layer)
+            curr_diag[1:] = curr_diag[1:] * e
+        #add the created diag to a list of diags
+        diag_list.append(curr_diag)
+        #print useful stuff to debug
+        if DEBUG:
+            print(f"current diagonal is: {curr_diag_idx}")
+            print(curr_diag)
+    #the coefficient matrix will have the center diag by the first diag in the list
+    coefs = np.diag(diag_list[0], 0)
+    #put the diagonals to together into the final coefficent matrix!
+    for idx, diag in enumerate(diag_list):
+        #skip the first diag (already decided)
+        if idx == 0:
+            continue
+        #place the current diagonal in the upper triangle
+        coefs += np.diag(diag, idx)
+        #place the current diagonal in the lower triangle
+        coefs += np.diag(diag, -idx)
+    #print the matrix if debug!
+    if COEF_DEBUG:
+        print(coefs)
+
+
 
     return coefs
 
-def model_atmosphere(num_layers, solar_irradiance, e, albedo):
+create_coef_matrix(4, 0.1)
+
+def model_atmosphere(num_layers, solar_irradiance, e, albedo, sw_absorbing_layer = 0):
     '''
     A*fluxes = b, solving for fluxes!
     '''
@@ -84,17 +125,18 @@ def model_atmosphere(num_layers, solar_irradiance, e, albedo):
     # create b with the first value as solar irradiance
     # (and everything else zero)
     b = np.zeros(num_layers+1)
-    b[0] = -(solar_irradiance * (1 - albedo) / 4) # -S/4 * (1 - alpha)
-    if debug:
+    b[sw_absorbing_layer] = -(solar_irradiance * (1 - albedo) / 4) # -S/4 * (1 - alpha)
+    if DEBUG:
         print("A is: ", A)
         print("b is: ", b)
 
     #solve for the fluxes
     try:
         fluxes = np.linalg.solve(A, b)
-    except Exception as ex:
+    except np.linalg.LinAlgError as ex:
         #have a no atmosphere energy balance if emissivity is 0
-        print(ex)
+        if DEBUG:
+            ex.add_note("Emissivity is 0 (no atmosphere)")
         fluxes =[b[0] / A[0,0]]
 
     #Create empty temperature array
@@ -105,16 +147,11 @@ def model_atmosphere(num_layers, solar_irradiance, e, albedo):
         temp = (flux / stef_boltz) ** (1/4)
         temps[idx] = temp
 
-    if debug:
+    if DEBUG:
         print("fluxes are: ", fluxes)
         print("temps are: ", temps)
 
     return temps
-
-
-model_atmosphere(0, 1361, 1, 0)
-
-S_0 = 1350 # Wm^-2
 
 #We will now conduct experiment 1
 def experiment1():
@@ -130,10 +167,20 @@ def experiment1():
         surf_temps.append(temp[0])
 
     fig, ax = plt.subplots(1, 1, figsize = (8, 5))
-    ax.plot(surf_temps, emissivities)
+    ax.plot(emissivities, surf_temps)
+    ax.hlines(  288,
+                -TOL,
+                1+TOL,
+                label = '288 K',
+                color = 'black',
+                linestyles='--',
+                linewidth = 2
+            )
+    ax.set_xlim(-0.01, 1+0.01)
     ax.set_title("1-Layer Atmosphere Surface Temperature")
-    ax.set_ylabel("Emissivity")
-    ax.set_xlabel("Surface Temperature [K]")
+    ax.set_xlabel("Emissivity")
+    ax.set_ylabel("Surface Temperature [K]")
+    ax.legend()
     plt.show()
 
 def plot_nlayer_surftemp(num_layers, solar_irradiance, e, albedo, temp_marker = None, title = None):
@@ -147,9 +194,8 @@ def plot_nlayer_surftemp(num_layers, solar_irradiance, e, albedo, temp_marker = 
         temp = model_atmosphere(layer, solar_irradiance, e, albedo)
         surf_temps.append(temp[0])
 
-
     fig, ax = plt.subplots(1, 1, figsize = (8, 5))
-    ax.plot(layers, surf_temps, color = color1)
+    ax.plot(layers, surf_temps, color = COLOR1)
 
     #Ensure the temp marker is indicated and a proper value (to have a dotted line marker!)
     if temp_marker is not None:
@@ -172,20 +218,30 @@ def plot_nlayer_surftemp(num_layers, solar_irradiance, e, albedo, temp_marker = 
             raise ValueError("title must be a string")
     else:
         ax.set_title("N-Layer Atmosphere Surface Temperature")
-    ax.set_xbound(-tol, num_layers + tol)
-    ax.set_xticks(range(0,num_layers+1))
+    ax.set_xbound(-TOL, num_layers + TOL)
+
+    if (num_layers > 10):
+        ax.set_xticks(range(0,num_layers+1, 5))
+    else:
+        ax.set_xticks(range(0,num_layers+1))
 
     ax.set_ylabel("Surface Temperature [K]")
     ax.set_xlabel("Number of Layers")
-    ax.legend()
+
+    if temp_marker is not None:
+        ax.legend()
+
     plt.show()
 
-def plot_temp_profile(num_layers, solar_irradiance, e, albedo, temp_marker = None, title = None):
+def plot_temp_profile(num_layers, solar_irradiance, e, albedo,
+                      temp_marker = None, title = None, sw_absorbing_layer = 0):
 
     #create the model and get temps
-    temp_prof = model_atmosphere(num_layers, solar_irradiance, e, 0)
+    temp_prof = model_atmosphere(num_layers, solar_irradiance, e, albedo, sw_absorbing_layer=sw_absorbing_layer)
     fig, ax = plt.subplots(1, 1, figsize = (8, 5))
-    ax.plot(temp_prof, np.arange(num_layers+1), color = color1)
+    ax.scatter(temp_prof, np.arange(num_layers+1), color = COLOR2)
+    ax.plot(temp_prof, np.arange(num_layers+1), color = COLOR2,
+            linestyle = '--', linewidth = 2)
 
     #If the temp marker is indicated and a proper value
     if temp_marker is not None:
@@ -198,14 +254,18 @@ def plot_temp_profile(num_layers, solar_irradiance, e, albedo, temp_marker = Non
                         linestyles='--',
                         linewidth = 2
             )
+            ax.legend()
         else:
             raise ValueError("temp_marker must be a float or int!")
 
-    ax.set_title(f"{num_layers}-Layer Temperature Profile")
+    if title is not None and isinstance(title, str):
+        ax.set_title(title)
+    else:
+        ax.set_title(f"{num_layers}-Layer Temperature Profile")
     ax.set_ylabel("Atmospheric Layer")
     ax.set_xlabel("Temperature [K]")
-    ax.set_ylim(-tol, num_layers + tol)
-    ax.legend()
+    ax.set_ylim(-TOL, num_layers + TOL)
+
     plt.show()
 
 
@@ -213,12 +273,46 @@ def validation_tests():
     print(create_coef_matrix(num_layers=3))
 
 
+
+#model_atmosphere(0, 1361, 1, 0)
+
+
+S_0 = 1350 # Wm^-2
+albedo = 0.3 #Estimate for Earth Albedo
 #See Surface Temp based on N-Layers
-plot_nlayer_surftemp(10, S_0, e = 0.225, albedo = 0, temp_marker = 288)
+
+experiment1()
+
+plot_nlayer_surftemp(10, S_0, e = 0.255, albedo = albedo, temp_marker = 288)
 
 #Show Earth's Temp profile
-plot_temp_profile(2, S_0, e = 0.255, albedo = 0, temp_marker = 288)
+plot_temp_profile(4, S_0, e = 0.255, albedo = albedo, temp_marker = 288)
+
+plot_temp_profile(5, S_0, e = 0.255, albedo = albedo, temp_marker = 288)
+
+#find difference between 4 and 5 layer surface temp)
+temp_4layer = model_atmosphere(4, S_0, e = 0.255, albedo = albedo)[0]
+temp_5layer = model_atmosphere(5, S_0, e = 0.255, albedo = albedo)[0]
+
+print(f"4-Layer Difference from 288K:\t {np.abs(288 - temp_4layer)}")
+print(f"5-Layer Difference from 288K:\t {np.abs(288 - temp_5layer)}")
+print(f"Temperature Difference:\t {temp_5layer - temp_4layer}")
+
 
 #Check out Venus's surface temperature based on N-Layers
-plot_nlayer_surftemp(30, 2600, e = 1, albedo = 0, temp_marker= 700, title = "N-Layer Venus Atmosphere")
+plot_nlayer_surftemp(100,
+                     2600,
+                     e = 1,
+                     albedo = 0.7,
+                     temp_marker= 700,
+                     title = "N-Layer Venus Atmosphere"
+                    )
 
+#go for large scale nuclear war
+plot_temp_profile(num_layers = 5,
+                  solar_irradiance = S_0,
+                  e = 0.5,
+                  albedo = 0,
+                  title = "Nuclear Winter Temperature Profile",
+                  sw_absorbing_layer = 5
+)
