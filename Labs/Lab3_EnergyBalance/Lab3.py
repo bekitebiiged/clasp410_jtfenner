@@ -112,7 +112,7 @@ def create_coef_matrix(num_layers = 1, e = 1):
 
 create_coef_matrix(4, 0.1)
 
-def model_atmosphere(num_layers, solar_irradiance, e, albedo, sw_absorbing_layer = 0):
+def model_atmosphere(num_layers, solar_irradiance, e, a, sw_absorbing_layer = 0):
     '''
     A*fluxes = b, solving for fluxes!
     '''
@@ -125,7 +125,7 @@ def model_atmosphere(num_layers, solar_irradiance, e, albedo, sw_absorbing_layer
     # create b with the first value as solar irradiance
     # (and everything else zero)
     b = np.zeros(num_layers+1)
-    b[sw_absorbing_layer] = -(solar_irradiance * (1 - albedo) / 4) # -S/4 * (1 - alpha)
+    b[sw_absorbing_layer] = -(solar_irradiance * (1 - a) / 4) # -S/4 * (1 - alpha)
     if DEBUG:
         print("A is: ", A)
         print("b is: ", b)
@@ -163,7 +163,7 @@ def experiment1():
     surf_temps = []
 
     for e in emissivities:
-        temp = model_atmosphere(1, S_0, e, 0)
+        temp = model_atmosphere(1, S_0, e, 0.3)
         surf_temps.append(temp[0])
 
     fig, ax = plt.subplots(1, 1, figsize = (8, 5))
@@ -180,10 +180,10 @@ def experiment1():
     ax.set_title("1-Layer Atmosphere Surface Temperature")
     ax.set_xlabel("Emissivity")
     ax.set_ylabel("Surface Temperature [K]")
-    ax.legend()
+    ax.legend(loc = 'best')
     plt.show()
 
-def plot_nlayer_surftemp(num_layers, solar_irradiance, e, albedo, temp_marker = None, title = None):
+def plot_nlayer_surftemp(num_layers, solar_irradiance, e, a, temp_marker = None, title = None):
     #create N-layer model
 
     #create number of layers, starting with 0 -> 10 (count numbers/ints)
@@ -191,7 +191,7 @@ def plot_nlayer_surftemp(num_layers, solar_irradiance, e, albedo, temp_marker = 
     #create empty surf_temp list
     surf_temps = []
     for layer in layers:
-        temp = model_atmosphere(layer, solar_irradiance, e, albedo)
+        temp = model_atmosphere(layer, solar_irradiance, e, a)
         surf_temps.append(temp[0])
 
     fig, ax = plt.subplots(1, 1, figsize = (8, 5))
@@ -220,7 +220,9 @@ def plot_nlayer_surftemp(num_layers, solar_irradiance, e, albedo, temp_marker = 
         ax.set_title("N-Layer Atmosphere Surface Temperature")
     ax.set_xbound(-TOL, num_layers + TOL)
 
-    if (num_layers > 10):
+    if (num_layers > 100):
+        ax.set_xticks(range(0,num_layers+1, 10))
+    elif(num_layers > 10):
         ax.set_xticks(range(0,num_layers+1, 5))
     else:
         ax.set_xticks(range(0,num_layers+1))
@@ -229,19 +231,19 @@ def plot_nlayer_surftemp(num_layers, solar_irradiance, e, albedo, temp_marker = 
     ax.set_xlabel("Number of Layers")
 
     if temp_marker is not None:
-        ax.legend()
+        ax.legend(loc = 'best')
 
     plt.show()
 
-def plot_temp_profile(num_layers, solar_irradiance, e, albedo,
+def plot_temp_profile(num_layers, solar_irradiance, e, a,
                       temp_marker = None, title = None, sw_absorbing_layer = 0):
 
     #create the model and get temps
-    temp_prof = model_atmosphere(num_layers, solar_irradiance, e, albedo, sw_absorbing_layer=sw_absorbing_layer)
+    temp_prof = model_atmosphere(num_layers, solar_irradiance, e, a, sw_absorbing_layer=sw_absorbing_layer)
     fig, ax = plt.subplots(1, 1, figsize = (8, 5))
-    ax.scatter(temp_prof, np.arange(num_layers+1), color = COLOR2)
-    ax.plot(temp_prof, np.arange(num_layers+1), color = COLOR2,
-            linestyle = '--', linewidth = 2)
+    ax.scatter(temp_prof, np.arange(num_layers+1), color = COLOR1, zorder = 5)
+    ax.plot(temp_prof, np.arange(num_layers+1), color = COLOR1,
+            linestyle = '--', linewidth = 2, zorder = 5)
 
     #If the temp marker is indicated and a proper value
     if temp_marker is not None:
@@ -254,7 +256,7 @@ def plot_temp_profile(num_layers, solar_irradiance, e, albedo,
                         linestyles='--',
                         linewidth = 2
             )
-            ax.legend()
+            ax.legend(loc = 'best')
         else:
             raise ValueError("temp_marker must be a float or int!")
 
@@ -278,21 +280,21 @@ def validation_tests():
 
 
 S_0 = 1350 # Wm^-2
-albedo = 0.3 #Estimate for Earth Albedo
+a = 0.3 #Estimate for Earth Albedo
 #See Surface Temp based on N-Layers
 
 experiment1()
 
-plot_nlayer_surftemp(10, S_0, e = 0.255, albedo = albedo, temp_marker = 288)
+plot_nlayer_surftemp(10, S_0, e = 0.255, a = a, temp_marker = 288)
 
 #Show Earth's Temp profile
-plot_temp_profile(4, S_0, e = 0.255, albedo = albedo, temp_marker = 288)
+plot_temp_profile(4, S_0, e = 0.255, a = a, temp_marker = 288)
 
-plot_temp_profile(5, S_0, e = 0.255, albedo = albedo, temp_marker = 288)
+plot_temp_profile(5, S_0, e = 0.255, a = a, temp_marker = 288)
 
 #find difference between 4 and 5 layer surface temp)
-temp_4layer = model_atmosphere(4, S_0, e = 0.255, albedo = albedo)[0]
-temp_5layer = model_atmosphere(5, S_0, e = 0.255, albedo = albedo)[0]
+temp_4layer = model_atmosphere(4, S_0, e = 0.255, a = a)[0]
+temp_5layer = model_atmosphere(5, S_0, e = 0.255, a = a)[0]
 
 print(f"4-Layer Difference from 288K:\t {np.abs(288 - temp_4layer)}")
 print(f"5-Layer Difference from 288K:\t {np.abs(288 - temp_5layer)}")
@@ -300,10 +302,10 @@ print(f"Temperature Difference:\t {temp_5layer - temp_4layer}")
 
 
 #Check out Venus's surface temperature based on N-Layers
-plot_nlayer_surftemp(100,
+plot_nlayer_surftemp(120,
                      2600,
                      e = 1,
-                     albedo = 0.7,
+                     a = 0.77, #Bond albedo from NASA fact sheet
                      temp_marker= 700,
                      title = "N-Layer Venus Atmosphere"
                     )
@@ -312,7 +314,7 @@ plot_nlayer_surftemp(100,
 plot_temp_profile(num_layers = 5,
                   solar_irradiance = S_0,
                   e = 0.5,
-                  albedo = 0,
+                  a = 0,
                   title = "Nuclear Winter Temperature Profile",
                   sw_absorbing_layer = 5
 )
