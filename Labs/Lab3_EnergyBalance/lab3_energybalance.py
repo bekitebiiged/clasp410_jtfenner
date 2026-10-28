@@ -434,9 +434,9 @@ plot_temp_profile(5, S_0, e = 0.255, albedo = A, temp_marker = 288)
 temp_4layer = model_atmosphere(4, S_0, e = 0.255, albedo = A)[0]
 temp_5layer = model_atmosphere(5, S_0, e = 0.255, albedo = A)[0]
 #Print the difference to make a choice on which layer to use
-print(f"4-Layer Difference from 288K:\t {np.abs(288 - temp_4layer)}")
-print(f"5-Layer Difference from 288K:\t {np.abs(288 - temp_5layer)}")
-print(f"Temperature Difference:\t {temp_5layer - temp_4layer}")
+#print(f"4-Layer Difference from 288K:\t {np.abs(288 - temp_4layer)}")
+#print(f"5-Layer Difference from 288K:\t {np.abs(288 - temp_5layer)}")
+#print(f"Temperature Difference:\t {temp_5layer - temp_4layer}")
 
 #Check out Venus's surface temperature based on N-Layers
 plot_nlayer_surftemp(num_layers = 120,
