@@ -47,8 +47,8 @@ Enjoy!~~~
 import matplotlib.pyplot as plt
 import numpy as np
 #Create a DEBUG feature for the code to print out a bunch of info!
-DEBUG = False
-COEF_DEBUG = False
+DEBUG = True
+COEF_DEBUG = True
 
 #Set the plotting styles:
 #Update these to adjust plotting aesthetics
@@ -432,7 +432,7 @@ plot_temp_profile(5, S_0, e = 0.255, albedo = A, temp_marker = 288)
 
 #find difference between 4 and 5 layer surface temp)
 temp_4layer = model_atmosphere(4, S_0, e = 0.255, albedo = A)[0]
-temp_5layer = model_atmosphere(5, S_0, e = 0.255, albedo = A)[0]
+temp_5layer = model_atmosphere(5, S_0, e = 0.255, albedo = 0.33)[0]
 #Print the difference to make a choice on which layer to use
 #print(f"4-Layer Difference from 288K:\t {np.abs(288 - temp_4layer)}")
 #print(f"5-Layer Difference from 288K:\t {np.abs(288 - temp_5layer)}")
