@@ -63,7 +63,6 @@ plt.rcParams['legend.facecolor'] = 'oldlace'
 plt.rcParams['xtick.color'] = 'black'
 plt.rcParams['ytick.color'] = 'black'
 plt.rcParams['axes.grid'] = True
-
 COLOR1 = 'teal'
 COLOR2 = 'sandybrown'
 #Create a 'TOLerance' for the upper and lower bounds for each axis
@@ -71,7 +70,7 @@ COLOR2 = 'sandybrown'
 TOL = 0.25
 #Declare some constants to be used later
 S_0 = 1350 # Wm^-2
-a = 0.3 #Estimate for Earth Albedo
+a = 0.3 #Estimate for Earth Albedo from NASA Fact Sheet (bond albedo)
 
 #╔═══════╗ ╔═╗   ╔═╗ ╔═╗     ╔═╗ ╔═══════╗ ╔═════════╗ ╔═════╗ ╔═══════╗ ╔═╗     ╔═╗ ╔═══════╗
 #║ ╔═════╝ ║ ║   ║ ║ ║ ╚═══╗ ║ ║ ║ ╔═════╝ ╚═══╗ ╔═══╝ ╚═╗ ╔═╝ ║ ╔═══╗ ║ ║ ╚═══╗ ║ ║ ║ ╔═════╝
