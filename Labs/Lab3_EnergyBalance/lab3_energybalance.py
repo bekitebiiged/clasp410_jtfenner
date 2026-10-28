@@ -1,5 +1,5 @@
 '''
-This is the script for Lab3-Energy Balance for CLIMATE410 in Fall 2026.
+This is the script for Lab3_Energy_Balance for CLIMATE410 in Fall 2026.
 
 The code is split into a few sections:
 
@@ -70,7 +70,7 @@ COLOR2 = 'sandybrown'
 TOL = 0.25
 #Declare some constants to be used later
 S_0 = 1350 # Wm^-2
-a = 0.3 #Estimate for Earth Albedo from NASA Fact Sheet (bond albedo)
+A = 0.3 #Estimate for Earth Albedo from NASA Fact Sheet (bond albedo)
 
 #╔═══════╗ ╔═╗   ╔═╗ ╔═╗     ╔═╗ ╔═══════╗ ╔═════════╗ ╔═════╗ ╔═══════╗ ╔═╗     ╔═╗ ╔═══════╗
 #║ ╔═════╝ ║ ║   ║ ║ ║ ╚═══╗ ║ ║ ║ ╔═════╝ ╚═══╗ ╔═══╝ ╚═╗ ╔═╝ ║ ╔═══╗ ║ ║ ╚═══╗ ║ ║ ║ ╔═════╝
@@ -80,13 +80,15 @@ a = 0.3 #Estimate for Earth Albedo from NASA Fact Sheet (bond albedo)
 #╚═╝       ╚═══════╝ ╚═╝     ╚═╝ ╚═══════╝     ╚═╝     ╚═════╝ ╚═══════╝ ╚═╝     ╚═╝ ╚═══════╝
 def create_coef_matrix(num_layers = 1, e = 1):
     '''
-    Function which creates the matrix of coefficients for an atmopspheric energy balance diagram.
+    Function which creates the matrix of coefficients for an N-layer atmospheric energy balance.
+    Matrix is created using the surface balance row and creating diagonals to piece together a
+    symmetric matrix along the center diagonal.
     ==============
         Inputs
     ==============
-        num_layers:
+        num_layers: int
             Number of atmospheric layers in the model
-        e:
+        e:  float [0, 1]
             Emissivity value of the atmosphere (each layer)
     ==============
         Returns
@@ -104,7 +106,7 @@ def create_coef_matrix(num_layers = 1, e = 1):
             [ 0.  1. -2.  1.]   #This is the second layer
             [ 0.  0.  1. -2.]   #This is the third layer
             ]
-
+        Becomes more complicated if e < 1, which is shown in general in the accompanying lab report.
     '''
 
     # Ensure that the number of layers is correct!
@@ -115,28 +117,38 @@ def create_coef_matrix(num_layers = 1, e = 1):
     # help with getting the diagonal matrix!
     # https://stackoverflow.com/questions/58139494/how-can-i-create-a-diagonal-matrix-with-numpy
 
-    first_row = [-1]
+    #create a list for the first row (surface-layer energy balance)
+    first_row = [-1] #first value is -1 (always), as the Earth releases flux
+    #loop over the number of columns/fluxes
     for col in range(1,num_layers+1):
+        #calculate the flux based on the column
+        #column refers to atmospheric layer 'index'/'flux'.
+        #np.max is called because the value at 1 throws an error
         first_row.append( float(e * (1-e)**(np.max( (0,(col-1)) )) ) )
+        #print info if debug is on
         if DEBUG:
             print(f"curr element: e * (1-e)^{(np.max( (0, (col-1))) )}")
+    #print the first row if debug is on
     if DEBUG:
         print(f"FIRST ROW OF COEF IS : \n{first_row}")
 
+    #create a list to hold each diagonal
     diag_list = []
     #interate over the number of diagonals to create
     for curr_diag_idx in range(num_layers+1):
         #first diag = 0
         #the current diagonal is equal to the first row's idx
-        #the length of the diagonal gets smaller as idx increases!
+        #curr_diag = [vector of one's, length dependant on idx]
+        #each value is made to be the value of the surface balance at current idx
         curr_diag = np.ones(num_layers + 1 - curr_diag_idx) * first_row[curr_diag_idx]
         #the center diag is treated specially
-        if (curr_diag_idx == 0):
+        if curr_diag_idx == 0:
             #the values from 1 -> end are equal to -2e (first value is -1)
             curr_diag[1:] = curr_diag[1:] * 2 * e
         #all off-center diagonals
         else:
-            #the values are the same, just mutiplyed by another e (due to absorption from that layer)
+            #
+            #multiply by another e (due to absorption from that layer)
             curr_diag[1:] = curr_diag[1:] * e
         #add the created diag to a list of diags
         diag_list.append(curr_diag)
@@ -148,7 +160,7 @@ def create_coef_matrix(num_layers = 1, e = 1):
     coefs = np.diag(diag_list[0], 0)
     #put the diagonals to together into the final coefficent matrix!
     for idx, diag in enumerate(diag_list):
-        #skip the first diag (already decided)
+        #skip the first diag (already added)
         if idx == 0:
             continue
         #place the current diagonal in the upper triangle
@@ -158,39 +170,66 @@ def create_coef_matrix(num_layers = 1, e = 1):
     #print the matrix if debug!
     if COEF_DEBUG:
         print(coefs)
-
-
-
     return coefs
 
-create_coef_matrix(4, 0.1)
-
-def model_atmosphere(num_layers, solar_irradiance, e, a, sw_absorbing_layer = 0):
+def model_atmosphere(num_layers, solar_irradiance, e, albedo, sw_absorbing_layer = 0):
     '''
-    A*fluxes = b, solving for fluxes!
-    '''
+    This function takes parameters to model an energy balance,
+    returning the temperatures at each layer.
+    Fluxes are calculated and then converted into temperatures using Stefan-Boltzmann Law.
+    ==============
+        Inputs
+    ==============
+        num_layers: int
+            Number of atmospheric layers in the model
+        solar_irradiance: int
+            Solar flux (input energy)
+        e:  float [0, 1]
+            Emissivity value of the atmosphere (each layer)
+        albedo:  float [0, 1]
+            Albedo of the absorbing layer (1-e_{for the shortwave band})
+        sw_absorbing_layer = 0: int
+            Layer which will absorb incoming shortwave (solar irradiance).
+            Can be shifted from surface to arbitrary layer.
 
+    ==============
+        Returns
+    ==============
+        temps: list
+            list of temperatures at each atmospheric layer (including surface).
+            Moves from surface to top of atmosphere.
+
+    Example:
+        temps = model_atmosphere(4, S_0, e = 0.255, a = a)
+        print(temps)
+            [285.04693212 254.7878797  245.03990989 233.96641402 221.0510526 ]
+            [surface -> 1st layer -> 2nd layer -> 3rd layer -> 4th layer (nth)]
+        temps_nuclear_winter = model_atmosphere(5, S_0, e = 0.5, a = 0, sw_absorbing_layer = 5)
+            this will model a 5-layer atmosphere with emissivity of 0.5 for all atmospheric layers.
+            albedo is 0, indicating the absorbing layer will intake all sw radiation
+            sw_absorbing_layer = 5 means the 5th layer will absorb all sw (not the surface!)
+    '''
     stef_boltz = 5.6703e-8 #Stefan-Boltzmann
     # create the coefficient matrix 'A'
-    A = create_coef_matrix(num_layers=num_layers, e=e)
+    coefs = create_coef_matrix(num_layers=num_layers, e=e)
 
     # since A moves from surface -> Nth Layer, we will
     # create b with the first value as solar irradiance
     # (and everything else zero)
     b = np.zeros(num_layers+1)
-    b[sw_absorbing_layer] = -(solar_irradiance * (1 - a) / 4) # -S/4 * (1 - alpha)
+    b[sw_absorbing_layer] = -(solar_irradiance * (1 - albedo) / 4) # -S/4 * (1 - alpha)
     if DEBUG:
-        print("A is: ", A)
+        print("A is: ", coefs)
         print("b is: ", b)
 
     #solve for the fluxes
     try:
-        fluxes = np.linalg.solve(A, b)
+        fluxes = np.linalg.solve(coefs, b)
     except np.linalg.LinAlgError as ex:
         #have a no atmosphere energy balance if emissivity is 0
         if DEBUG:
             ex.add_note("Emissivity is 0 (no atmosphere)")
-        fluxes =[b[0] / A[0,0]]
+        fluxes =[b[0] / coefs[0,0]]
 
     #Create empty temperature array
     temps = np.zeros(len(fluxes))
@@ -208,6 +247,12 @@ def model_atmosphere(num_layers, solar_irradiance, e, a, sw_absorbing_layer = 0)
 
 #We will now conduct experiment 1
 def experiment1():
+    '''
+    This function looks at the emissivity,
+        and how it affects the surface temperature of earth
+        (1-layer model)
+    It returns nothing but plots a emissivity vs surf_temp chart.
+    '''
     #see effect of emissivity on surface temperature
 
     #create list of emissivities 0 -> 1, 0.1 step
@@ -219,7 +264,7 @@ def experiment1():
         temp = model_atmosphere(1, S_0, e, 0.3)
         surf_temps.append(temp[0])
 
-    fig, ax = plt.subplots(1, 1, figsize = (8, 5))
+    _, ax = plt.subplots(1, 1, figsize = (8, 5))
     ax.plot(emissivities, surf_temps)
     ax.hlines(  288,
                 -TOL,
@@ -236,7 +281,14 @@ def experiment1():
     ax.legend(loc = 'best')
     plt.show()
 
-def plot_nlayer_surftemp(num_layers, solar_irradiance, e, a, temp_marker = None, title = None):
+def plot_nlayer_surftemp(num_layers, solar_irradiance, e, albedo, temp_marker = None, title = None):
+    '''
+    This function plots calculates surface temperature
+    based on given parameters up to a certain number of layers.
+    number of layers on x-axis, surface temperature on y-axis.
+    Optional ability to add the a dashed line to indicate a specified temperature (temp_marker)
+    User can specify 'title' as well, but defaults to "N-Layer Atmosphere Surface Temperature"
+    '''
     #create N-layer model
 
     #create number of layers, starting with 0 -> 10 (count numbers/ints)
@@ -244,10 +296,10 @@ def plot_nlayer_surftemp(num_layers, solar_irradiance, e, a, temp_marker = None,
     #create empty surf_temp list
     surf_temps = []
     for layer in layers:
-        temp = model_atmosphere(layer, solar_irradiance, e, a)
+        temp = model_atmosphere(layer, solar_irradiance, e, albedo)
         surf_temps.append(temp[0])
 
-    fig, ax = plt.subplots(1, 1, figsize = (8, 5))
+    _, ax = plt.subplots(1, 1, figsize = (8, 5))
     ax.plot(layers, surf_temps, color = COLOR1)
 
     #Ensure the temp marker is indicated and a proper value (to have a dotted line marker!)
@@ -273,9 +325,9 @@ def plot_nlayer_surftemp(num_layers, solar_irradiance, e, a, temp_marker = None,
         ax.set_title("N-Layer Atmosphere Surface Temperature")
     ax.set_xbound(-TOL, num_layers + TOL)
 
-    if (num_layers > 100):
+    if num_layers > 100:
         ax.set_xticks(range(0,num_layers+1, 10))
-    elif(num_layers > 10):
+    elif num_layers > 10:
         ax.set_xticks(range(0,num_layers+1, 5))
     else:
         ax.set_xticks(range(0,num_layers+1))
@@ -288,12 +340,26 @@ def plot_nlayer_surftemp(num_layers, solar_irradiance, e, a, temp_marker = None,
 
     plt.show()
 
-def plot_temp_profile(num_layers, solar_irradiance, e, a,
+def plot_temp_profile(num_layers, solar_irradiance, e, albedo,
                       temp_marker = None, title = None, sw_absorbing_layer = 0):
+    '''
+    This function plots calculates temperature profile
+        based on given parameters and plots the temperature profile.
+
+    Temperature on x-axis, atmospheric layer on y-axis.
+        (on y-axis because height is up-down, feels right)
+    Optional ability to add a dashed line to indicate a specified temperature (temp_marker)
+    User can specify 'title' as well, but defaults to "N-Layer Atmosphere Surface Temperature"
+        (N is the specified number of layers)
+    User can also specify sw_absorbing_layer.
+        (used for the nuclear winter scenario)
+    '''
 
     #create the model and get temps
-    temp_prof = model_atmosphere(num_layers, solar_irradiance, e, a, sw_absorbing_layer=sw_absorbing_layer)
-    fig, ax = plt.subplots(1, 1, figsize = (8, 5))
+    temp_prof = model_atmosphere(num_layers, solar_irradiance, e, albedo,
+                                sw_absorbing_layer=sw_absorbing_layer)
+    #plot the modeled atmosphere
+    _, ax = plt.subplots(1, 1, figsize = (8, 5))
     ax.scatter(temp_prof, np.arange(num_layers+1), color = COLOR1, zorder = 5)
     ax.plot(temp_prof, np.arange(num_layers+1), color = COLOR1,
             linestyle = '--', linewidth = 2, zorder = 5)
@@ -355,17 +421,18 @@ def plot_temp_profile(num_layers, solar_irradiance, e, a,
 experiment1()
 
 #Plot Earth's Surface Temp as function of num-layers
-plot_nlayer_surftemp(10, S_0, e = 0.255, a = a, temp_marker = 288)
+plot_nlayer_surftemp(10, S_0, e = 0.255, albedo = A, temp_marker = 288)
 
 #Show Earth's Temp profile for 4-layer
-plot_temp_profile(4, S_0, e = 0.255, a = a, temp_marker = 288)
+plot_temp_profile(4, S_0, e = 0.255, albedo = A, temp_marker = 288)
 
 #Show Earth's Temp profile for 5-layer
-plot_temp_profile(5, S_0, e = 0.255, a = a, temp_marker = 288)
+plot_temp_profile(5, S_0, e = 0.255, albedo = A, temp_marker = 288)
+
 
 #find difference between 4 and 5 layer surface temp)
-temp_4layer = model_atmosphere(4, S_0, e = 0.255, a = a)[0]
-temp_5layer = model_atmosphere(5, S_0, e = 0.255, a = a)[0]
+temp_4layer = model_atmosphere(4, S_0, e = 0.255, albedo = A)[0]
+temp_5layer = model_atmosphere(5, S_0, e = 0.255, albedo = A)[0]
 #Print the difference to make a choice on which layer to use
 print(f"4-Layer Difference from 288K:\t {np.abs(288 - temp_4layer)}")
 print(f"5-Layer Difference from 288K:\t {np.abs(288 - temp_5layer)}")
@@ -375,7 +442,7 @@ print(f"Temperature Difference:\t {temp_5layer - temp_4layer}")
 plot_nlayer_surftemp(num_layers = 120,
                      solar_irradiance = 2600,
                      e = 1,
-                     a = 0.77, #Bond albedo from NASA fact sheet
+                     albedo = 0.77, #Bond albedo from NASA fact sheet
                      temp_marker= 700,
                      title = "N-Layer Venus Atmosphere"
                     )#
@@ -384,7 +451,7 @@ plot_nlayer_surftemp(num_layers = 120,
 plot_temp_profile(num_layers = 5,
                   solar_irradiance = S_0,
                   e = 0.5,
-                  a = 0,
+                  albedo = 0, #completely absorb the sw
                   title = "Nuclear Winter Temperature Profile",
                   sw_absorbing_layer = 5 #The final atmosphere layer absorbs it all!
 )
