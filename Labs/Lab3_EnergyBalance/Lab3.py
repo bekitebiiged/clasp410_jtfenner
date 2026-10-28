@@ -1,6 +1,51 @@
+'''
+This is the script for Lab3-Energy Balance for CLIMATE410 in Fall 2026.
+
+The code is split into a few sections:
+
+    INITIAL THINGS:
+Basic intial setup-related lines
+    * Importing modules
+    * DEBUG toggling
+    * Setting plotting parameters
+    * declaring some constants
+
+    FUNCTIONS:
+Here we create our modelling and plotting functions
+These include:
+    * create_coef_matrix()
+    * model_atmosphere()
+    * experiment1()             #used to answer part of question3
+    * plot_nlevel_surftemp()
+    * plot_temp_profile()
+
+    VALIDATION:
+Here we validate some of the functions and such
+Uncomment the code to test
+
+    TESTING:
+This is where the plots are created and questions answered
+
+Enjoy!~~~
+'''
+#    ╔═════╗             ╔═╗     ╔═╗             ╔═╗
+#    ╚═╗ ╔═╝ ╔═══════╗ ╔═╝ ╚═╗   ╚═╝ ╔═══════╗   ║ ║
+#      ║ ║   ║ ╔═══╗ ║ ╚═╗ ╔═╝   ╔═╗ ║ ╔═══╗ ║   ║ ║
+#      ║ ║   ║ ║   ║ ║   ║ ║     ║ ║ ║ ║   ║ ║   ║ ║
+#    ╔═╝ ╚═╗ ║ ║   ║ ║   ║ ╚═══╗ ║ ║ ║ ╚═══╝ ╚═╗ ║ ║
+#    ╚═════╝ ╚═╝   ╚═╝   ╚═════╝ ╚═╝ ╚═════════╝ ╚═╝
+#
+#
+#    ╔═════════╗ ╔═╗   ╔═╗ ╔═╗
+#    ╚═══╗ ╔═══╝ ║ ║   ║ ║ ╚═╝ ╔═══════╗ ╔═══════╗   ╔═════╗
+#        ║ ║     ║ ╚═══╝ ║ ╔═╗ ║ ╔═══╗ ║ ║ ╔═══╗ ║ ╔═╝   ╔═╝
+#        ║ ║     ║ ╔═══╗ ║ ║ ║ ║ ║   ║ ║ ║ ║   ║ ║ ╚═══╗ ╚═╗
+#        ║ ║     ║ ║   ║ ║ ║ ║ ║ ║   ║ ║ ║ ╚═══╝ ║ ╔═══╝ ╔═╝
+#        ╚═╝     ╚═╝   ╚═╝ ╚═╝ ╚═╝   ╚═╝ ╚═════╗ ║ ╚═════╝
+#                                          ╔═══╝ ║
+#                                          ╚═════╝
 import matplotlib.pyplot as plt
 import numpy as np
-
 #Create a DEBUG feature for the code to print out a bunch of info!
 DEBUG = False
 COEF_DEBUG = False
@@ -24,7 +69,16 @@ COLOR2 = 'sandybrown'
 #Create a 'TOLerance' for the upper and lower bounds for each axis
 #Used mainly for adjusting values and having a good h or vline for reference
 TOL = 0.25
+#Declare some constants to be used later
+S_0 = 1350 # Wm^-2
+a = 0.3 #Estimate for Earth Albedo
 
+#╔═══════╗ ╔═╗   ╔═╗ ╔═╗     ╔═╗ ╔═══════╗ ╔═════════╗ ╔═════╗ ╔═══════╗ ╔═╗     ╔═╗ ╔═══════╗
+#║ ╔═════╝ ║ ║   ║ ║ ║ ╚═══╗ ║ ║ ║ ╔═════╝ ╚═══╗ ╔═══╝ ╚═╗ ╔═╝ ║ ╔═══╗ ║ ║ ╚═══╗ ║ ║ ║ ╔═════╝
+#║ ╚═══╗   ║ ║   ║ ║ ║ ╔═╗ ╚═╝ ║ ║ ║           ║ ║       ║ ║   ║ ║   ║ ║ ║ ╔═╗ ╚═╝ ║ ║ ╚═════╗
+#║ ╔═══╝   ║ ║   ║ ║ ║ ║ ╚═╗   ║ ║ ║           ║ ║       ║ ║   ║ ║   ║ ║ ║ ║ ╚═╗   ║ ╚═════╗ ║
+#║ ║       ║ ╚═══╝ ║ ║ ║   ╚═╗ ║ ║ ╚═════╗     ║ ║     ╔═╝ ╚═╗ ║ ╚═══╝ ║ ║ ║   ╚═╗ ║ ╔═════╝ ║
+#╚═╝       ╚═══════╝ ╚═╝     ╚═╝ ╚═══════╝     ╚═╝     ╚═════╝ ╚═══════╝ ╚═╝     ╚═╝ ╚═══════╝
 def create_coef_matrix(num_layers = 1, e = 1):
     '''
     Function which creates the matrix of coefficients for an atmopspheric energy balance diagram.
@@ -271,44 +325,61 @@ def plot_temp_profile(num_layers, solar_irradiance, e, a,
     plt.show()
 
 
-def validation_tests():
-    print(create_coef_matrix(num_layers=3))
+#    ╔═╗     ╔═╗             ╔═╗ ╔═╗       ╔═╗               ╔═╗     ╔═╗
+#    ║ ║     ║ ║ ╔═══════╗   ║ ║ ╚═╝ ╔═════╝ ║ ╔═══════╗   ╔═╝ ╚═╗   ╚═╝ ╔═══════╗ ╔═══════╗
+#    ║ ║     ║ ║ ║ ╔═══╗ ║   ║ ║ ╔═╗ ║ ╔═══╗ ║ ║ ╔═══╗ ║   ╚═╗ ╔═╝   ╔═╗ ║ ╔═══╗ ║ ║ ╔═══╗ ║
+#    ║ ╚═╗ ╔═╝ ║ ║ ║   ║ ║   ║ ║ ║ ║ ║ ║   ║ ║ ║ ║   ║ ║     ║ ║     ║ ║ ║ ║   ║ ║ ║ ║   ║ ║
+#    ╚═╗ ╚═╝ ╔═╝ ║ ╚═══╝ ╚═╗ ║ ║ ║ ║ ║ ╚═══╝ ║ ║ ╚═══╝ ╚═╗   ║ ╚═══╗ ║ ║ ║ ╚═══╝ ║ ║ ║   ║ ║
+#      ╚═════╝   ╚═════════╝ ╚═╝ ╚═╝ ╚═══════╝ ╚═════════╝   ╚═════╝ ╚═╝ ╚═══════╝ ╚═╝   ╚═╝
+#
+#DEBUG = True
+#COEF_DEBUG = True
+#create_coef_matrix(2, 1)
+#create_coef_matrix(2, 0)
+#model_atmosphere(1, S_0, e = 1, a=a)
+#model_atmosphere(1, S_0, e = 0.5, a=a)
+#model_atmosphere(1, S_0, e = 0, a=a)
+#plot_temp_profile(3.4, 0, 0, 0)
+#plot_temp_profile(1, 1, 1, 1, title = 0)
 
 
+#    ╔═════════╗                       ╔═╗     ╔═╗
+#    ╚═══╗ ╔═══╝   ╔═══╗     ╔═════╗ ╔═╝ ╚═╗   ╚═╝ ╔═══════╗ ╔═══════╗
+#        ║ ║     ╔═╝   ╚═╗ ╔═╝   ╔═╝ ╚═╗ ╔═╝   ╔═╗ ║ ╔═══╗ ║ ║ ╔═══╗ ║
+#        ║ ║     ║ ╔═════╝ ╚═══╗ ╚═╗   ║ ║     ║ ║ ║ ║   ║ ║ ║ ║   ║ ║
+#        ║ ║     ║ ╚═════╗ ╔═══╝ ╔═╝   ║ ╚═══╗ ║ ║ ║ ║   ║ ║ ║ ╚═══╝ ║
+#        ╚═╝     ╚═══════╝ ╚═════╝     ╚═════╝ ╚═╝ ╚═╝   ╚═╝ ╚═════╗ ║
+#                                                              ╔═══╝ ║
+#                                                              ╚═════╝
 
-#model_atmosphere(0, 1361, 1, 0)
-
-
-S_0 = 1350 # Wm^-2
-a = 0.3 #Estimate for Earth Albedo
-#See Surface Temp based on N-Layers
-
+#Plot the 1-layer atmosphere for the first part of question 3
 experiment1()
 
+#Plot Earth's Surface Temp as function of num-layers
 plot_nlayer_surftemp(10, S_0, e = 0.255, a = a, temp_marker = 288)
 
-#Show Earth's Temp profile
+#Show Earth's Temp profile for 4-layer
 plot_temp_profile(4, S_0, e = 0.255, a = a, temp_marker = 288)
 
+#Show Earth's Temp profile for 5-layer
 plot_temp_profile(5, S_0, e = 0.255, a = a, temp_marker = 288)
 
 #find difference between 4 and 5 layer surface temp)
 temp_4layer = model_atmosphere(4, S_0, e = 0.255, a = a)[0]
 temp_5layer = model_atmosphere(5, S_0, e = 0.255, a = a)[0]
-
+#Print the difference to make a choice on which layer to use
 print(f"4-Layer Difference from 288K:\t {np.abs(288 - temp_4layer)}")
 print(f"5-Layer Difference from 288K:\t {np.abs(288 - temp_5layer)}")
 print(f"Temperature Difference:\t {temp_5layer - temp_4layer}")
 
-
 #Check out Venus's surface temperature based on N-Layers
-plot_nlayer_surftemp(120,
-                     2600,
+plot_nlayer_surftemp(num_layers = 120,
+                     solar_irradiance = 2600,
                      e = 1,
                      a = 0.77, #Bond albedo from NASA fact sheet
                      temp_marker= 700,
                      title = "N-Layer Venus Atmosphere"
-                    )
+                    )#
 
 #go for large scale nuclear war
 plot_temp_profile(num_layers = 5,
@@ -316,5 +387,5 @@ plot_temp_profile(num_layers = 5,
                   e = 0.5,
                   a = 0,
                   title = "Nuclear Winter Temperature Profile",
-                  sw_absorbing_layer = 5
+                  sw_absorbing_layer = 5 #The final atmosphere layer absorbs it all!
 )
