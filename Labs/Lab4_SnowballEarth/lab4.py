@@ -1,5 +1,6 @@
 '''
 Script for Lab4: Snowball Earth for CLIMATE410 in Fall2026.
+Also please open report in Adobe Acrobat (if possible!)
 Code Outline is:
     * Imports and such
     * plotting definitions/defaults
@@ -64,7 +65,7 @@ xlabel = "Latitude ($^{\circ}$)"
 ylabel = "Temperature ($C^{\circ}$)"
 
 '''
-Helpful functions for the Snowball Earth lab.
+Function Definitions
 '''
 def temp_warm(lats_in):
     '''
@@ -383,13 +384,33 @@ def validation_test():
     plt.show()
 
 
+'''
+
+Condition Calculation
+
+'''
+
 # Calculate the baseline Warm Earth temperature vector
 warm_earth = temp_warm(lats)
 # Calculate the insolation amounts for each band
 insol = insolation(S_0, lats)
+
+
+'''
+
+Plot the validation tests
+
+'''
 # Plot the validation tests
 validation_test()
 
+'''
+
+Animation code
+
+Uncomment to run (takes a bit! also beware the auto-saving lines)
+
+'''
 
 
 #Tune model to reproduce warm-Earth equilibrium
@@ -427,7 +448,7 @@ validation_test()
 #Writer = animation.writers['ffmpeg']
 #writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
 #ani = animation.FuncAnimation(fig = fig, func = update, frames = 150, interval = 50, repeat = True)
-#ani.save('Labs/Lab4_SnowballEarth/figures/ThermalDiffAnimation.mp4', writer = writer)
+##ani.save('Labs/Lab4_SnowballEarth/figures/ThermalDiffAnimation.mp4', writer = writer)
 #plt.show()
 ##Loop from 0 - 1 [EMISSIVITY]
 #variable_emissivity_steady_state = []
@@ -465,11 +486,13 @@ validation_test()
 #writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
 #ani = animation.FuncAnimation(fig = fig, func = update_emiss, frames = len(variable_emissivity_steady_state),
 #                               interval = 100, repeat = True)
-#ani.save('Labs/Lab4_SnowballEarth/figures/EmissivityAnimation.mp4', writer = writer)
+##ani.save('Labs/Lab4_SnowballEarth/figures/EmissivityAnimation.mp4', writer = writer)
 #plt.show()
 
+'''
+Question  2 Calculations
 
-#Question  2
+'''
 
 # create a reference warm earth curve
 warm_earth_line = lines.Line2D(lat_ticks, warm_earth, label = ('Warm Earth'), alpha = 0.5)
@@ -485,7 +508,12 @@ chosen_warm_earth_temps = calc_steady_state(warm_earth, areas, insol,
 chosen_warm_earth_curve = plot_steady_state(lat_ticks, chosen_warm_earth_temps, reference_line=warm_earth_line, title = temp_title,
                                             curve_label= "Constructed Warm Earth")
 
-#Question 3
+
+'''
+
+Question 3 Calculations
+
+'''
 hot_earth_init_temps = np.ones(lats.shape) * 60 #60C at all points
 cold_earth_init_temps = hot_earth_init_temps.copy() * -1 #-60C at all points
 hot_title = "Hot Earth Steady State"
@@ -505,7 +533,11 @@ flash_frozen_temps = calc_steady_state(warm_earth, areas, insol, therm_diff= cho
 flash_frozen_curve = plot_steady_state(lat_ticks, flash_frozen_temps, title = flash_title, reference_line= [hot_earth_curve, cold_earth_curve],
                                        curve_label = "Flash-Frozen Earth")
 
-#Question 4
+'''
+
+Question 4 Calculations
+
+'''
 
 d_gamma = 0.05
 avg_global_temps = []
