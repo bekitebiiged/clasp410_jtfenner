@@ -1,20 +1,23 @@
 '''
-
-
-
-
-
-
+Script for Lab4: Snowball Earth for CLIMATE410 in Fall2026.
+Code Outline is:
+    * Imports and such
+    * plotting definitions/defaults
+    * constant definition
+    * function definition
+    * condition calculation
+    * animations
+    * Question 2 calculation
+    * Question 3 calculation
+    * Question 4 calculation
 '''
 import numpy as np
 import matplotlib.pyplot as plt
-from cycler import cycler
 import matplotlib.animation as animation
 import matplotlib.lines as lines
+from cycler import cycler
 from matplotlib.patches import FancyArrowPatch
-
 from collections.abc import Iterable
-
 #Adjust plotting stuff :)
 plt.rcParams['figure.dpi'] = 150
 plt.rcParams['figure.titlesize'] = 18
@@ -35,9 +38,8 @@ custom_cycler = (cycler(color=colors) +
 )
 plt.rc('axes', prop_cycle=custom_cycler)
 
-
+# Define constants
 DEBUG = False
-
 S_0 = 1370 # Wm^-2
 THERMAL_DIFFUSIVITY = 100 # m^2s^-1
 A = 6378e3 #m
@@ -52,7 +54,6 @@ ALBEDO_ICE = 0.6
 ALEBDO_GROUND = 0.3
 SECONDS_PER_YEAR = 1 * 365 * 24 * 60 * 60 #seconds per year
 STEADY_STATE_TIME = 20000 #10000 years to reach a steady state
-
 npoints = 18
 yspacing = 180 / npoints
 lats = np.linspace(yspacing/2., 180-yspacing/2, npoints) # Lat cell centers
@@ -156,14 +157,43 @@ def time_step(temp_vector, area_vector, insolation_vector, d_time, y_spacing, th
               basic_diffusion = False, diffusion_with_correction = False, full_calculation = True):
     '''
     Function to calculate the next timestep for diffusive heat spread
+    ================
+        Inputs
+    ================
+    temp_vector:
+        Vector of temperatures of which the next time step will be calculated
+    area_vector:
+        Vector of areas that represent each latitudinal band
+    insolation_vector:
+        Vector of solar insolation energy
+    d_time:
+        Timestep size in seconds
+    y_spacing:
+        Latitudinal spacing between
+    them_diff: 100[m^2s^-1]
+        Thermal Diffusivity for calculation, defaults to 100
+    emissitiy: EMISSIVITY = 1
+        Emissivity for calculation, defaults to global value (1)
+    albedo: None
+        Defaults to none, meaning variable albedo based on band temperature.
+        When defined, uses a static albedo for each band
+    basic_diffusion: False
+        When true, only calculates the basic diffusion term
+    diffusion_with_correction: False
+        When true, only calculates the diffusion and spherical correction term
+            (unless basic diffusion is true)
+    full_calculation: True
+        Defaults to True, which calculates the next timestep with full diffusion terms
+            (unless either otf the two above are true)
+    ===============
+        Returns
+    ===============
+    next_step:
+        Vector of temperatures at each latitude for next time step
     '''
-    #def ghost_nodes(vector):
-    #   return np.concatenate(([vector[0]],vector,[vector[-1]]), axis = 0)
-    #temp_vector = ghost_nodes(temp_vector)
-    #area_vector = ghost_nodes(area_vector)
-    #insolation_vector = ghost_nodes(insolation_vector)
-
+    # Calculate the dy based on the latitude spacing
     dy = ( ( A * np.pi * y_spacing ) / 180 ) #dy in meters (y_spacing is in degrees)
+    # Get the length of the temperature vector
     N = len(temp_vector)
 
     # Create B matrix:
@@ -181,34 +211,39 @@ def time_step(temp_vector, area_vector, insolation_vector, d_time, y_spacing, th
     #Create L matrix
     L = np.identity(N) - therm_diff*d_time*K
 
-    # calculate the radiative forcing term
+    # Optionally check the K, B, and temp vectors
     if DEBUG:
         print(f"K is : {K}")
         print(f"B is : {B}")
         print("K, L created")
         print(f"{temp_vector}")
 
+    # Calculate the spherical correction term
     factor = (therm_diff * d_time * B.dot(temp_vector) * B.dot(area_vector)) / (area_vector * 4 * (dy**2) )
 
+    # Optionally print the correction factor
     if DEBUG:
         print(f"Spherical Correction: {factor}")
-    # calculate the radiative forcing factor
+
+    # Create the albedo vector
     albedo_vector = np.ones(N)
+    # Use dynamic albedo is albedo is not defined
     if albedo is None:
         ice_locs = ( temp_vector <= -10 )
         albedo_vector[ice_locs] = ALBEDO_ICE
         albedo_vector[~ice_locs] = ALEBDO_GROUND
-
+    # use static albedo if albedo is defined
     else:
         albedo_vector = albedo_vector * albedo
-    #print(f"ALBEDO VECTOR: {albedo_vector}")
+
+    # calculated the radiative forcing term
     radiative_forcing = (np.multiply(insolation_vector, (1 - albedo_vector) )
                         - ( emissivity * STEFAN_BOLTZMANN * np.power( (temp_vector + 273.15) , 4) )
                         )
     radiative_forcing = (d_time / (RHO_SEAWATER * C_SEAWATER * OCEAN_DEPTH) ) * radiative_forcing
 
 
-    # declare the combined vector
+    # declare the vector to be used in the solving step (np array)
     combined_vector : object
     # calculate the combined vector based on user choice
     if basic_diffusion:
@@ -218,13 +253,42 @@ def time_step(temp_vector, area_vector, insolation_vector, d_time, y_spacing, th
     elif full_calculation:
         combined_vector = temp_vector + factor + radiative_forcing
 
+    # calculate the next time step
     next_step = np.linalg.solve(L, combined_vector)
-
+    # return the next time step
     return next_step
 
+# calculate the steady state
 def calc_steady_state(init_conds, area_vector, insolation_vector, d_time = SECONDS_PER_YEAR, y_spacing = yspacing, therm_diff = 100,
                         emissivity = EMISSIVITY, albedo = None):
-
+    '''
+    ================
+        Inputs
+    ================
+    temp_vector:
+        Vector of temperatures of which the next time step will be calculated
+    area_vector:
+        Vector of areas that represent each latitudinal band
+    insolation_vector:
+        Vector of solar insolation energy
+    d_time:
+        Timestep size in seconds
+    y_spacing:
+        Latitudinal spacing between
+    them_diff: 100[m^2s^-1]
+        Thermal Diffusivity for calculation, defaults to 100
+    emissitiy: EMISSIVITY = 1
+        Emissivity for calculation, defaults to global value (1)
+    albedo: None
+        Defaults to none, meaning variable albedo based on band temperature.
+        When defined, uses a static albedo for each band
+    ===============
+        Returns
+    ===============
+    state:
+        Return the steady state temperature which is the temperature vector after
+        STEADY_STATE_TIME iterations
+    '''
     state = time_step(init_conds, area_vector, insolation_vector, d_time,
                     y_spacing = y_spacing, therm_diff= therm_diff,
                     emissivity= emissivity, albedo = albedo)
@@ -238,7 +302,28 @@ def plot_steady_state(lats, temps, reference_line = None,
                         title = "Steady State Temperatures", curve_label = "Example",
                         xlabel = xlabel, ylabel = ylabel):
     '''
-
+    ================
+        Inputs
+    ================
+    lats:
+        The x-axis latitude values
+    temps:
+        The y-axis temperature values
+    reference_line: = None
+        Optional reference lines to plot
+    title: = 'Steady State Temperatures'
+        Optional title for the graphs
+    curve_label: 'Example'
+        Optional label for the curve
+    xlabel: = xlabel
+        Optional argument for the xlabel
+    ylabel: = ylabel
+        Optional argument for the ylabel
+    ===============
+        Returns
+    ===============
+    curve: Line2D Object
+        The plotted curve based on input lats, temps, and curve_label
     '''
     fig, ax = plt.subplots(1, 1, figsize = (6, 4))
     curve, = ax.plot(lats, temps, label = curve_label)
@@ -258,6 +343,9 @@ def plot_steady_state(lats, temps, reference_line = None,
     return curve
 
 def validation_test():
+    '''
+    Function to calculate and plot the validation test for the time_step function
+    '''
     basic_diff = time_step(warm_earth, areas, insol, d_time = SECONDS_PER_YEAR, albedo = 0.3,
                         y_spacing = yspacing, therm_diff= THERMAL_DIFFUSIVITY,
                         basic_diffusion=True)
@@ -284,7 +372,6 @@ def validation_test():
                                 full_calculation=True)
 
     fig, ax = plt.subplots(1, 1, figsize = (6, 4))
-
     ax.plot(lat_ticks, warm_earth, label = 'initial conditions')
     ax.plot(lat_ticks, basic_diff, label = 'basic diffusion')
     ax.plot(lat_ticks, diffusion_with_corr, label = 'diff + spherical correction')
@@ -296,10 +383,14 @@ def validation_test():
     plt.show()
 
 
+# Calculate the baseline Warm Earth temperature vector
 warm_earth = temp_warm(lats)
+# Calculate the insolation amounts for each band
 insol = insolation(S_0, lats)
-
+# Plot the validation tests
 validation_test()
+
+
 
 #Tune model to reproduce warm-Earth equilibrium
 
@@ -379,9 +470,13 @@ validation_test()
 
 
 #Question  2
+
+# create a reference warm earth curve
 warm_earth_line = lines.Line2D(lat_ticks, warm_earth, label = ('Warm Earth'), alpha = 0.5)
+# define the emission and therm diff values which were chosen based on the animations
 chosen_emiss = 0.735
 chosen_therm_diff = 30
+# get the steady state for the constructed warm earth curve
 temp_title = ("Constructed Warm Earth Temperature\n $\epsilon =$ " + f"{chosen_emiss} | "
               + "$\lambda=$ " + f"{chosen_therm_diff} " + "$m^{2}s^{-1}$"
 )
@@ -404,7 +499,6 @@ cold_earth_temps = calc_steady_state(cold_earth_init_temps, areas, insol,
                                     therm_diff = chosen_therm_diff, emissivity= chosen_emiss)
 cold_earth_curve = plot_steady_state(lat_ticks, cold_earth_temps,
                                     reference_line=chosen_warm_earth_curve, title = cold_title, curve_label= "Cold Earth")
-
 flash_title = "Steady State Temperatures"
 flash_frozen_temps = calc_steady_state(warm_earth, areas, insol, therm_diff= chosen_therm_diff, emissivity= chosen_emiss,
                                        albedo = 0.6)
@@ -412,12 +506,15 @@ flash_frozen_curve = plot_steady_state(lat_ticks, flash_frozen_temps, title = fl
                                        curve_label = "Flash-Frozen Earth")
 
 #Question 4
+
 d_gamma = 0.05
 avg_global_temps = []
+# make the list of gamma values to loop through
 gamma_list = np.arange(0.4, 1.4+d_gamma, d_gamma)
 gamma_list = np.concat([gamma_list, sorted(gamma_list[:-1], reverse=True)], axis = 0)
 curr_state_temps = cold_earth_init_temps.copy()
 state_temps = [curr_state_temps]
+#loop through gamma values, calculating steady state and moving on
 for gamma in gamma_list:
     curr_insol = gamma * insolation(S_0, lats)
     curr_state_temps = calc_steady_state(curr_state_temps, areas, curr_insol,
@@ -426,11 +523,12 @@ for gamma in gamma_list:
 
     avg_global_temps.append(np.mean(curr_state_temps))
     state_temps.append(curr_state_temps)
+
+# plot the gamma values and steady states
 fig, ax = plt.subplots(1, 1, figsize = (6, 4))
 ax.plot(gamma_list, avg_global_temps)
-#show direction arrows at multipler = 0.9 (about halfway through both sides)
+#show direction arrow for graph and label the start condition
 quarter = len(gamma_list) // 4
-
 ax.set_title("Average Global Temp vs Solar Multiplier")
 ax.set_ylabel(ylabel)
 ax.set_xlabel("Solar Multiplier ($\gamma$)")
@@ -442,7 +540,6 @@ ax.annotate('', xytext = (gamma_list[-quarter], avg_global_temps[-quarter]),
              xy= (gamma_list[(-quarter)+1], avg_global_temps[(-quarter)+1]),
              arrowprops = dict(shrink = 0.05),
 )
-
 ax.annotate('Initial State', xy = (gamma_list[0], avg_global_temps[0]+2),
             xytext = (gamma_list[0], avg_global_temps[0]+40),
             arrowprops= dict(arrowstyle = 'simple', color = 'orchid'),
@@ -450,9 +547,3 @@ ax.annotate('Initial State', xy = (gamma_list[0], avg_global_temps[0]+2),
 ax.plot(gamma_list[0], avg_global_temps[0], marker = '*', markersize = 8)
 
 plt.show()
-
-#for gamma, state_temp in zip(gamma_list, state_temps):
-#    fig, ax = plt.subplots(1, 1, figsize = (6, 4))
-#    ax.plot(lat_ticks, state_temp)
-#    ax.set_title("Steady State Temp at $\gamma = $" + f"{gamma}")
-#    plt.show()
