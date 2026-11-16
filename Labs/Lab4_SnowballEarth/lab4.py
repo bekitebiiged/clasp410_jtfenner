@@ -285,10 +285,10 @@ def validation_test():
 
     fig, ax = plt.subplots(1, 1, figsize = (6, 4))
 
-    ax.plot(lats, warm_earth, label = 'initial conditions')
-    ax.plot(lats, basic_diff, label = 'basic diffusion')
-    ax.plot(lats, diffusion_with_corr, label = 'diff + spherical correction')
-    ax.plot(lats, diff_corr_radiative, label = 'diff + sphcorr + radiation')
+    ax.plot(lat_ticks, warm_earth, label = 'initial conditions')
+    ax.plot(lat_ticks, basic_diff, label = 'basic diffusion')
+    ax.plot(lat_ticks, diffusion_with_corr, label = 'diff + spherical correction')
+    ax.plot(lat_ticks, diff_corr_radiative, label = 'diff + sphcorr + radiation')
     ax.legend()
     ax.set_title("Steady-State Temperatures")
     ax.set_xlabel(xlabel)
@@ -299,83 +299,83 @@ def validation_test():
 warm_earth = temp_warm(lats)
 insol = insolation(S_0, lats)
 
-#validation_test()
+validation_test()
 
 #Tune model to reproduce warm-Earth equilibrium
 
-#Loop from 0 - 150 [THERMAL DIFFUSIVITY]
-variable_diffs_steady_state = []
-therm_diffs = np.linspace(0, 150, num = 150, endpoint=True)
-for therm_diff in therm_diffs:
-    curr_step = time_step(warm_earth, areas, insol, d_time = SECONDS_PER_YEAR, albedo = 0.3,
-                        y_spacing = yspacing, therm_diff = therm_diff,
-                        full_calculation=True)
-    for t in range(0, 10000, 1):
-        curr_step = time_step(curr_step, areas, insol, d_time = SECONDS_PER_YEAR, albedo = 0.3,
-                        y_spacing = yspacing, therm_diff = therm_diff,
-                        full_calculation=True)
-
-    variable_diffs_steady_state.append(curr_step)
-
-fig, ax = plt.subplots(1, 1, figsize = (6, 4))
-warm_earth_line, = ax.plot(lat_ticks, warm_earth, label = ('Warm Earth'), alpha = 0.5)
-line, = ax.plot(lat_ticks, variable_diffs_steady_state[0], label = ('$\lambda$' + f'{0}'))
-ax.set_title("Steady State Temperatures \n Variable $\lambda$")
-ax.set_xlabel(xlabel)
-ax.set_ylabel(ylabel)
-def update(frame):
-    y = variable_diffs_steady_state[frame]
-    line.set_data(lat_ticks, y)
-    line.set_label('$\lambda$ = ' + f"{frame}" + " $m^{2}s^{-1}$")
-    ax.set_ylim(np.min(warm_earth) - 10, np.max([y, warm_earth])+10)
-    ax.legend(loc = 'upper right')
-    return line,
-
-# Set up formatting for the movie files
-#https://stackoverflow.com/questions/31192125/saving-animations-using-ffmpeg-and-matplotlib
-Writer = animation.writers['ffmpeg']
-writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-ani = animation.FuncAnimation(fig = fig, func = update, frames = 150, interval = 50, repeat = True)
-ani.save('Labs/Lab4_SnowballEarth/figures/ThermalDiffAnimation.mp4', writer = writer)
-plt.show()
-#Loop from 0 - 1 [EMISSIVITY]
-variable_emissivity_steady_state = []
-emissivities = np.linspace(0, 1, endpoint=True)
-for emissivity in emissivities:
-    curr_step = time_step(warm_earth, areas, insol, d_time = SECONDS_PER_YEAR, albedo = 0.3,
-                        y_spacing = yspacing, therm_diff = THERMAL_DIFFUSIVITY,
-                        emissivity = emissivity,
-                        full_calculation=True)
-    for t in range(0, 10000, 1):
-        curr_step = time_step(curr_step, areas, insol, d_time = SECONDS_PER_YEAR, albedo = 0.3,
-                        y_spacing = yspacing, therm_diff = THERMAL_DIFFUSIVITY,
-                        emissivity= emissivity,
-                        full_calculation=True)
-
-    variable_emissivity_steady_state.append(curr_step)
-fig, ax = plt.subplots(1, 1, figsize = (6, 4))
-ax.plot(lat_ticks, warm_earth, label = ('Warm Earth'), alpha = 0.5)
-line, = ax.plot(lat_ticks, variable_emissivity_steady_state[0], label = ('$\epsilon$' + f'{0}'))
-
-ax.set_title("Steady State Temperatures \n Variable Emissivity")
-ax.set_xlabel(xlabel)
-ax.set_ylabel(ylabel)
-def update_emiss(frame):
-    y = variable_emissivity_steady_state[frame]
-    line.set_data(lat_ticks, y)
-    line.set_label('$\epsilon$ = ' + f"{emissivities[frame]:.3f}")
-    ax.legend()
-    ax.set_ylim(np.min(warm_earth) - 10, np.max([y, warm_earth])+10)
-    ax.legend(loc = 'upper right')
-    return line,
-
-# Set up formatting for the movie files
-Writer = animation.writers['ffmpeg']
-writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-ani = animation.FuncAnimation(fig = fig, func = update_emiss, frames = len(variable_emissivity_steady_state),
-                               interval = 100, repeat = True)
-ani.save('Labs/Lab4_SnowballEarth/figures/EmissivityAnimation.mp4', writer = writer)
-plt.show()
+##Loop from 0 - 150 [THERMAL DIFFUSIVITY]
+#variable_diffs_steady_state = []
+#therm_diffs = np.linspace(0, 150, num = 150, endpoint=True)
+#for therm_diff in therm_diffs:
+#    curr_step = time_step(warm_earth, areas, insol, d_time = SECONDS_PER_YEAR, albedo = 0.3,
+#                        y_spacing = yspacing, therm_diff = therm_diff,
+#                        full_calculation=True)
+#    for t in range(0, 10000, 1):
+#        curr_step = time_step(curr_step, areas, insol, d_time = SECONDS_PER_YEAR, albedo = 0.3,
+#                        y_spacing = yspacing, therm_diff = therm_diff,
+#                        full_calculation=True)
+#
+#    variable_diffs_steady_state.append(curr_step)
+#
+#fig, ax = plt.subplots(1, 1, figsize = (6, 4))
+#warm_earth_line, = ax.plot(lat_ticks, warm_earth, label = ('Warm Earth'), alpha = 0.5)
+#line, = ax.plot(lat_ticks, variable_diffs_steady_state[0], label = ('$\lambda$' + f'{0}'))
+#ax.set_title("Steady State Temperatures \n Variable $\lambda$")
+#ax.set_xlabel(xlabel)
+#ax.set_ylabel(ylabel)
+#def update(frame):
+#    y = variable_diffs_steady_state[frame]
+#    line.set_data(lat_ticks, y)
+#    line.set_label('$\lambda$ = ' + f"{frame}" + " $m^{2}s^{-1}$")
+#    ax.set_ylim(np.min(warm_earth) - 10, np.max([y, warm_earth])+10)
+#    ax.legend(loc = 'upper right')
+#    return line,
+#
+## Set up formatting for the movie files
+##https://stackoverflow.com/questions/31192125/saving-animations-using-ffmpeg-and-matplotlib
+#Writer = animation.writers['ffmpeg']
+#writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+#ani = animation.FuncAnimation(fig = fig, func = update, frames = 150, interval = 50, repeat = True)
+#ani.save('Labs/Lab4_SnowballEarth/figures/ThermalDiffAnimation.mp4', writer = writer)
+#plt.show()
+##Loop from 0 - 1 [EMISSIVITY]
+#variable_emissivity_steady_state = []
+#emissivities = np.linspace(0, 1, endpoint=True)
+#for emissivity in emissivities:
+#    curr_step = time_step(warm_earth, areas, insol, d_time = SECONDS_PER_YEAR, albedo = 0.3,
+#                        y_spacing = yspacing, therm_diff = THERMAL_DIFFUSIVITY,
+#                        emissivity = emissivity,
+#                        full_calculation=True)
+#    for t in range(0, 10000, 1):
+#        curr_step = time_step(curr_step, areas, insol, d_time = SECONDS_PER_YEAR, albedo = 0.3,
+#                        y_spacing = yspacing, therm_diff = THERMAL_DIFFUSIVITY,
+#                        emissivity= emissivity,
+#                        full_calculation=True)
+#
+#    variable_emissivity_steady_state.append(curr_step)
+#fig, ax = plt.subplots(1, 1, figsize = (6, 4))
+#ax.plot(lat_ticks, warm_earth, label = ('Warm Earth'), alpha = 0.5)
+#line, = ax.plot(lat_ticks, variable_emissivity_steady_state[0], label = ('$\epsilon$' + f'{0}'))
+#
+#ax.set_title("Steady State Temperatures \n Variable Emissivity")
+#ax.set_xlabel(xlabel)
+#ax.set_ylabel(ylabel)
+#def update_emiss(frame):
+#    y = variable_emissivity_steady_state[frame]
+#    line.set_data(lat_ticks, y)
+#    line.set_label('$\epsilon$ = ' + f"{emissivities[frame]:.3f}")
+#    ax.legend()
+#    ax.set_ylim(np.min(warm_earth) - 10, np.max([y, warm_earth])+10)
+#    ax.legend(loc = 'upper right')
+#    return line,
+#
+## Set up formatting for the movie files
+#Writer = animation.writers['ffmpeg']
+#writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+#ani = animation.FuncAnimation(fig = fig, func = update_emiss, frames = len(variable_emissivity_steady_state),
+#                               interval = 100, repeat = True)
+#ani.save('Labs/Lab4_SnowballEarth/figures/EmissivityAnimation.mp4', writer = writer)
+#plt.show()
 
 
 #Question  2
