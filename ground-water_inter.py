@@ -27,3 +27,5 @@ east_interp = interp1d(east_values[0], east_values[1], kind = 'linear', fill_val
 
 print(f"Eastern Boundary Interpolation: {east_interp}")
 print(f"Western Boundary Interpolation: {west_interp}")
+
+# Next include the top/bottom functions
