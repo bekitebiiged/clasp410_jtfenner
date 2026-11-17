@@ -29,6 +29,12 @@ east_interp = interp1d(east_values[0], east_values[1], kind = 'linear', fill_val
 #print(f"Western Boundary Interpolation: {west_interp}")
 
 # Next include the north/south boundary interpolation 
+# Interpolate hydro-potential along the bottom and top boundaries
+bottom_interp = np.interp(x, [x[0], x[-1]], [west_interp[0], east_interp[0]])
+top_interp = np.interp(x, [x[0], x[-1]], [west_interp[-1], east_interp[-1]])
+
+print(f"Bottom Boundary Interpolation: {bottom_interp}")
+print(f"Top Boundary Interpolation: {top_interp}")
 # using the interpolated values for east and western boundaries
 north_values = [np.array([0,19])*1e3, np.array([west_interp[0], east_interp[0]])]
 south_values = [np.array([0,19])*1e3, np.array([west_interp[-1],east_interp[-1]])]
