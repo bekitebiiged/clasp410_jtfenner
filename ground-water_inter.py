@@ -25,7 +25,16 @@ east_values = [np.array([1, 4, 9])*1e3, np.array([965, 995, 970])*1e3]
 west_interp = interp1d(west_values[0], west_values[1], kind = 'linear', fill_value='extrapolate')(y)
 east_interp = interp1d(east_values[0], east_values[1], kind = 'linear', fill_value='extrapolate')(y)
 
-print(f"Eastern Boundary Interpolation: {east_interp}")
-print(f"Western Boundary Interpolation: {west_interp}")
+#print(f"Eastern Boundary Interpolation: {east_interp}")
+#print(f"Western Boundary Interpolation: {west_interp}")
 
-# Next include the top/bottom functions
+# Next include the north/south boundary interpolation 
+# using the interpolated values for east and western boundaries
+north_values = [np.array([0,19])*1e3, np.array([west_interp[0], east_interp[0]])]
+south_values = [np.array([0,19])*1e3, np.array([west_interp[-1],east_interp[-1]])]
+
+north_interp = interp1d(north_values[0], north_values[1], kind='linear', fill_value='extrapolate')(y)
+south_interp = interp1d(south_values[0], south_values[1], kind='linear', fill_value='extrapoalte')(y)
+
+print(f"Northern Boundary interpolation: {north_interp}\n")
+print(f"Southern Boundary interpolation: {south_interp}")
